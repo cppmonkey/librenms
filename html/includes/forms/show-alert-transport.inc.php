@@ -10,14 +10,14 @@
  * the source code distribution for details.
  */
 
-use LibreNMS\Authentication\Auth;
+use LibreNMS\Authentication\LegacyAuth;
 
 header('Content-type: application/json');
 
-if (!Auth::user()->hasGlobalAdmin()) {
+if (!LegacyAuth::user()->hasGlobalAdmin()) {
     die(json_encode([
         'status' => 'error',
-        'message' => 'ERROR: You need to be admin'
+        'message' => 'You need to be admin'
     ]));
 }
 
@@ -51,6 +51,6 @@ if (is_array($transport)) {
 } else {
     die(json_encode([
         'status' => 'error',
-        'message' => 'ERROR: No alert transport found'
+        'message' => 'No alert transport found'
     ]));
 }

@@ -1,4 +1,5 @@
 <?php
+//FIXME remove Deprecated template
 /**
  * convert-template.inc.php
  *
@@ -24,14 +25,14 @@
  * @author     Tony Murray <murraytony@gmail.com>
  */
 
-use LibreNMS\Authentication\Auth;
+use LibreNMS\Authentication\LegacyAuth;
 
 header('Content-type: application/json');
 
-if (!Auth::user()->hasGlobalAdmin()) {
+if (!LegacyAuth::user()->hasGlobalAdmin()) {
     die(json_encode([
         'status' => 'error',
-        'message' => 'ERROR: You need to be admin',
+        'message' => 'You need to be admin',
     ]));
 }
 
@@ -42,10 +43,16 @@ if (empty($vars['template'])) {
     ]));
 }
 
-$new = '';
+$new_body = '';
 foreach (explode(PHP_EOL, $vars['template']) as $line) {
+    $new_body .= convert_template($line) . PHP_EOL;
+}
+$new_title = convert_template($vars['title']);
+
+function convert_template($line)
+{
     if (str_contains($line, '{calc')) {
-        $new .= preg_replace(
+        return preg_replace(
             [
                 '/{calc[ ]*([\w\d\s\%\.\(\)\*\/\-\+\/]+)}/',// Replaces {calc (something*100)}
                 '/%([\w\d]+)\.([\w\d]+)/',// Replaces %something.anything
@@ -93,13 +100,13 @@ foreach (explode(PHP_EOL, $vars['template']) as $line) {
             '$key',
             '$value',
         ];
-        $new .= preg_replace($find, $replace, $old1);
+        return preg_replace($find, $replace, $old1);
     }
-    $new .= PHP_EOL;
 }
 
 die(json_encode([
-    'status'  => 'ok',
+    'status'   => 'ok',
     'message'  => 'Template converted, review and save to update',
-    'template' => $new,
+    'template' => $new_body,
+    'title'    => $new_title,
 ]));

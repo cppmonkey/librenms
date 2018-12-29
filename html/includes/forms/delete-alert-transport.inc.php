@@ -10,14 +10,14 @@
  * the source code distribution for details.
  */
 
-use LibreNMS\Authentication\Auth;
+use LibreNMS\Authentication\LegacyAuth;
 
 header('Content-type: application/json');
 
-if (!Auth::user()->hasGlobalAdmin()) {
+if (!LegacyAuth::user()->hasGlobalAdmin()) {
     die(json_encode([
         'status' => 'error',
-        'message' => 'ERROR: You need to be admin.'
+        'message' => 'You need to be admin.'
     ]));
 }
 
@@ -26,7 +26,7 @@ $message = '';
 
 if (!is_numeric($vars['transport_id'])) {
     $status = 'error';
-    $message = 'ERROR: No transport selected';
+    $message = 'No transport selected';
 } else {
     if (dbDelete('alert_transports', '`transport_id` = ?', [$vars['transport_id']])) {
         dbDelete('alert_transport_map', '`target_type` = "single" AND `transport_or_group_id` = ?', [$vars['transport_id']]);
@@ -34,7 +34,7 @@ if (!is_numeric($vars['transport_id'])) {
 
         $message = 'Alert transport has been deleted';
     } else {
-        $message = 'ERROR: Alert transport has not been deleted';
+        $message = 'Alert transport has not been deleted';
     }
 }
 
