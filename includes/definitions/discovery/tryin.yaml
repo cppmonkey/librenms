@@ -9,6 +9,7 @@ modules:
                     num_oid: '.1.3.6.1.4.1.40989.10.16.20.10.{{ $index }}'
                     descr: 'Fan State'
                     index: 'fanState.{{ $index }}'
+                    group: 'NMU'
                     states:
                         - { value: 1, descr: ON, graph: 1, generic: 0 }
                         - { value: 0, descr: OFF, graph: 0, generic: 2 }
@@ -18,6 +19,7 @@ modules:
                     num_oid: '.1.3.6.1.4.1.40989.10.16.20.11.{{ $index }}'
                     descr: 'Power 1 Status'
                     index: 'power1State.{{ $index }}'
+                    group: 'NMU'
                     states:
                         - { value: 1, descr: ON, graph: 1, generic: 0 }
                         - { value: 0, descr: OFF, graph: 0, generic: 2 }
@@ -27,134 +29,7 @@ modules:
                     num_oid: '.1.3.6.1.4.1.40989.10.16.20.12.{{ $index }}'
                     descr: 'Power 2 Status'
                     index: 'power2State.{{ $index }}'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C1-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.1.2.1.{{ $index }}'
-                    descr: 'Card 1 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C2-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.2.2.1.{{ $index }}'
-                    descr: 'Card 2 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C3-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.3.2.1.{{ $index }}'
-                    descr: 'Card 3 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C4-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.4.2.1.{{ $index }}'
-                    descr: 'Card 4 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C5-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.5.2.1.{{ $index }}'
-                    descr: 'Card 5 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C6-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.6.2.1.{{ $index }}'
-                    descr: 'Card 6 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C7-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.7.2.1.{{ $index }}'
-                    descr: 'Card 7 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C8-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.8.2.1.{{ $index }}'
-                    descr: 'Card 8 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C9-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.9.2.1.{{ $index }}'
-                    descr: 'Card 9 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C10-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.10.2.1.{{ $index }}'
-                    descr: 'Card 10 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C11-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.11.2.1.{{ $index }}'
-                    descr: 'Card 11 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C12-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.12.2.1.{{ $index }}'
-                    descr: 'Card 12 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C13-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.13.2.1.{{ $index }}'
-                    descr: 'Card 13 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C14-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.14.2.1.{{ $index }}'
-                    descr: 'Card 14 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C15-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.15.2.1.{{ $index }}'
-                    descr: 'Card 15 State'
-                    states:
-                        - { value: 1, descr: ON, graph: 1, generic: 0 }
-                        - { value: 0, descr: OFF, graph: 0, generic: 2 }
-                -
-                    oid: OAP-C16-OEO::vCardState
-                    value: vCardState
-                    num_oid: '.1.3.6.1.4.1.40989.10.16.16.2.1.{{ $index }}'
-                    descr: 'Card 16 State'
+                    group: 'NMU'
                     states:
                         - { value: 1, descr: ON, graph: 1, generic: 0 }
                         - { value: 0, descr: OFF, graph: 0, generic: 2 }
