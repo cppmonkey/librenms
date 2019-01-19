@@ -1177,6 +1177,35 @@ function is_port_valid($port, $device)
     return true;
 }
 
+/**
+ * Try to fill in data for ifDescr, ifName, and ifAlias if devices do not provide them.
+ * Will not fill ifAlias if the user has overridden it
+ *
+ * @param array $port
+ * @param array $device
+ */
+function port_fill_missing(&$port, $device)
+{
+    // When devices do not provide data, populate with other data if available
+    if ($port['ifDescr'] == '' || $port['ifDescr'] == null) {
+        $port['ifDescr'] = $port['ifName'];
+        d_echo(' Using ifName as ifDescr');
+    }
+    if (!empty($device['attribs']['ifName:' . $port['ifName']])) {
+        // ifAlias overridden by user, don't update it
+        unset($port['ifAlias']);
+        d_echo(' ifAlias overriden by user');
+    } elseif ($port['ifAlias'] == '' || $port['ifAlias'] == null) {
+        $port['ifAlias'] = $port['ifDescr'];
+        d_echo(' Using ifDescr as ifAlias');
+    }
+
+    if ($port['ifName'] == '' || $port['ifName'] == null) {
+        $port['ifName'] = $port['ifDescr'];
+        d_echo(' Using ifDescr as ifName');
+    }
+}
+
 function scan_new_plugins()
 {
 
@@ -2393,20 +2422,18 @@ function cache_peeringdb()
  */
 function dump_db_schema()
 {
-    global $config;
-
-    $output = array();
+    $output = [];
     $db_name = dbFetchCell('SELECT DATABASE()');
 
     foreach (dbFetchRows("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '$db_name' ORDER BY TABLE_NAME;") as $table) {
         $table = $table['TABLE_NAME'];
         foreach (dbFetchRows("SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '$db_name' AND TABLE_NAME='$table'") as $data) {
-            $def = array(
+            $def = [
                 'Field'   => $data['COLUMN_NAME'],
                 'Type'    => $data['COLUMN_TYPE'],
                 'Null'    => $data['IS_NULLABLE'] === 'YES',
                 'Extra'   => str_replace('current_timestamp()', 'CURRENT_TIMESTAMP', $data['EXTRA']),
-            );
+            ];
 
             if (isset($data['COLUMN_DEFAULT']) && $data['COLUMN_DEFAULT'] != 'NULL') {
                 $default = trim($data['COLUMN_DEFAULT'], "'");
@@ -2421,15 +2448,30 @@ function dump_db_schema()
             if (isset($output[$table]['Indexes'][$key_name])) {
                 $output[$table]['Indexes'][$key_name]['Columns'][] = $key['Column_name'];
             } else {
-                $output[$table]['Indexes'][$key_name] = array(
+                $output[$table]['Indexes'][$key_name] = [
                     'Name'    => $key['Key_name'],
-                    'Columns' => array($key['Column_name']),
+                    'Columns' => [$key['Column_name']],
                     'Unique'  => !$key['Non_unique'],
                     'Type'    => $key['Index_type'],
-                );
+                ];
             }
         }
+
+        $create = dbFetchRow("SHOW CREATE TABLE `$table`")['Create Table'];
+        $constraint_regex = '/CONSTRAINT `(?<name>[A-Za-z_0-9]+)` FOREIGN KEY \(`(?<foreign_key>[A-Za-z_0-9]+)`\) REFERENCES `(?<table>[A-Za-z_0-9]+)` \(`(?<key>[A-Za-z_0-9]+)`\) ?(?<extra>[ A-Z]+)?/';
+        $constraint_count = preg_match_all($constraint_regex, $create, $constraints);
+        for ($i = 0; $i < $constraint_count; $i++) {
+            $constraint_name = $constraints['name'][$i];
+            $output[$table]['Constraints'][$constraint_name] = [
+                'name' => $constraint_name,
+                'foreign_key' => $constraints['foreign_key'][$i],
+                'table' => $constraints['table'][$i],
+                'key' => $constraints['key'][$i],
+                'extra' => $constraints['extra'][$i],
+            ];
+        }
     }
+
     return $output;
 }
 
@@ -2452,10 +2494,13 @@ function get_schema_list()
     $files = glob($config['install_dir'].'/sql-schema/*.sql');
 
     // set the keys to the db schema version
-    return array_reduce($files, function ($array, $file) {
-        $array[basename($file, '.sql')] = $file;
+    $files = array_reduce($files, function ($array, $file) {
+        $array[(int)basename($file, '.sql')] = $file;
         return $array;
-    }, array());
+    }, []);
+
+    ksort($files); // fix dbSchema 1000 order
+    return $files;
 }
 
 /**
@@ -2468,7 +2513,7 @@ function get_db_schema()
     try {
         $db = \LibreNMS\DB\Eloquent::DB();
         if ($db) {
-            return $db->table('dbSchema')
+            return (int)$db->table('dbSchema')
                 ->orderBy('version', 'DESC')
                 ->value('version');
         }
@@ -2488,11 +2533,7 @@ function db_schema_is_current()
 {
     $current = get_db_schema();
 
-    $schemas = get_schema_list();
-    end($schemas);
-    $latest = key($schemas);
-
-    return $current >= $latest;
+    return $current >= 1000;
 }
 
 /**
