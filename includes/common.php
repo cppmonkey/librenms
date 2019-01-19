@@ -86,7 +86,7 @@ function external_exec($command)
     global $debug, $vdebug;
 
     $proc = new \Symfony\Component\Process\Process($command);
-    $proc->setTimeout(600);
+    $proc->setTimeout(Config::get('snmp.exec_timeout', 1200));
 
     if ($debug && !$vdebug) {
         $patterns = [
@@ -190,17 +190,6 @@ function delete_port($int_id)
     dbDelete('ports_stack', "`port_id_low` = ? OR `port_id_high` = ?", array($int_id, $int_id));
 
     unlink(get_port_rrdfile_path($interface['hostname'], $interface['port_id']));
-}
-
-function sgn($int)
-{
-    if ($int < 0) {
-        return -1;
-    } elseif ($int == 0) {
-        return 0;
-    } else {
-        return 1;
-    }
 }
 
 function get_sensor_rrd($device, $sensor)
