@@ -154,6 +154,20 @@
 		
 		
 		-- 1.3.6.1.4.1.40989.10.16.20.9
+                fanSet OBJECT-TYPE
+                        SYNTAX INTEGER
+                                {
+                                off(0),
+                                on(1)
+                                }
+                        MAX-ACCESS read-write
+                        STATUS current
+                        DESCRIPTION
+                                "Description."
+                        ::= { nmu 9 }
+
+
+                -- 1.3.6.1.4.1.40989.10.16.20.10
 		fanState OBJECT-TYPE
 			SYNTAX INTEGER
 				{
@@ -167,7 +181,7 @@
 			::= { nmu 10 }
 
 		
-		-- 1.3.6.1.4.1.40989.10.16.20.10
+		-- 1.3.6.1.4.1.40989.10.16.20.11
 		power1State OBJECT-TYPE
 			SYNTAX INTEGER
 				{
@@ -181,7 +195,7 @@
 			::= { nmu 11 }
 
 		
-		-- 1.3.6.1.4.1.40989.10.16.20.11
+		-- 1.3.6.1.4.1.40989.10.16.20.12
 		power2State OBJECT-TYPE
 			SYNTAX INTEGER
 				{
@@ -195,7 +209,7 @@
 			::= { nmu 12 }
 
 		
-		-- 1.3.6.1.4.1.40989.10.16.20.12
+		-- 1.3.6.1.4.1.40989.10.16.20.13
 		softwareVersion OBJECT-TYPE
 			SYNTAX OCTET STRING
 			MAX-ACCESS read-only
@@ -205,7 +219,7 @@
 			::= { nmu 13 }
 
 		
-		-- 1.3.6.1.4.1.40989.10.16.20.13
+		-- 1.3.6.1.4.1.40989.10.16.20.14
 		hardwareVersion OBJECT-TYPE
 			SYNTAX OCTET STRING
 			MAX-ACCESS read-only
@@ -215,7 +229,7 @@
 			::= { nmu 14 }
 
 		
-		-- 1.3.6.1.4.1.40989.10.16.20.14
+		-- 1.3.6.1.4.1.40989.10.16.20.15
 		serialNumber OBJECT-TYPE
 			SYNTAX OCTET STRING
 			MAX-ACCESS read-only
@@ -225,7 +239,7 @@
 			::= { nmu 15 }
 
 		
-		-- 1.3.6.1.4.1.40989.10.16.20.15
+		-- 1.3.6.1.4.1.40989.10.16.20.16
 		manufacturingdate OBJECT-TYPE
 			SYNTAX OCTET STRING
 			MAX-ACCESS read-only

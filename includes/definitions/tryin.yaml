@@ -4,15 +4,42 @@ type: network
 poller_modules:
     applications: false
     bgp-peers: false
+    entity-physical: false
+    hr-mib: false
     ipSystemStats: false
     ipmi: false
     mempools: false
     netstats: false
     ntp: false
     ospf: false
+    ports: false
     processors: false
     storage: false
+    stp: false
     ucd-diskio: false
+    ucd-mib: false
+    wireless: false
+discovery_modules:
+    arp-table: false
+    bgp-peers: false
+    cisco-vrf-lite: false
+    discovery-protocols: false
+    entity-physical: false
+    entity-state: false
+    fdb-table: false
+    hr-device: false
+    ipv4-addresses: false
+    ipv6-addresses: false
+    mempools: false
+    ntp: false
+    ports: false
+    ports-stack: false
+    processors: false
+    services: false
+    storage: false
+    stp: false
+    ucd-diskio: false
+    vlans: false
     wireless: false
 discovery:
     -
@@ -21,3 +48,4 @@ discovery:
                 - .1.3.6.1.4.1.40989.10.16
                 - .1.3.6.1.4.1.40989.10.8
                 - .1.3.6.1.4.1.40989.10.4
+                - .1.3.6.1.2.1.1.2
