@@ -6,60 +6,15 @@ if ($sensor_class == 'state') {
 }
 
 if (count($sensors)) {
-    switch (strtolower($sensor_type)) {
-        case "charge":
-            $sensor_fa_icon = "fa-battery-half";
-            break;
-        case "temperature":
-            $sensor_fa_icon = "fa-thermometer-three-quarters";
-            break;
-        case "humidity":
-            $sensor_fa_icon = "fa-tint";
-            break;
-        case "fanspeed":
-            $sensor_fa_icon = "fa-asterisk";
-            break;
-        case "voltage":
-            $sensor_fa_icon = "fa-bolt";
-            break;
-        case "current":
-            $sensor_fa_icon = "fa-bolt";
-            break;
-        case "frequency":
-            $sensor_fa_icon = "fa-line-chart";
-            break;
-        case "runtime":
-            $sensor_fa_icon = "fa-hourglass";
-            break;
-        case "power":
-            $sensor_fa_icon = "fa-power-off";
-            break;
-        case "dBm":
-            $sensor_fa_icon = "fa-signal";
-            break;
-        case "state":
-            $sensor_fa_icon = "fa-bullseye";
-            break;
-        case "load":
-            $sensor_fa_icon = "fa-percent";
-            break;
-        case "signal":
-            $sensor_fa_icon = "fa-signal";
-            break;
-        case "airflow":
-            $sensor_fa_icon = "fa-superpowers";
-            break;
-        default:
-            $sensor_fa_icon = "fa-delicious";
-            break;
-    }//end switch
+    $icons = \App\Models\Sensor::getIconMap();
+    $sensor_fa_icon = 'fa-' . (isset($icons[$sensor_class]) ? $icons[$sensor_class] : 'delicious');
 
     echo '
         <div class="row">
         <div class="col-md-12">
         <div class="panel panel-default panel-condensed">
         <div class="panel-heading">';
-    echo '<a href="device/device='.$device['device_id'].'/tab=health/metric='.strtolower($sensor_type).'/"><i class="fa '.$sensor_fa_icon.' fa-lg icon-theme" aria-hidden="true"></i><strong> '.$sensor_type.'</strong></a>';
+    echo '<a href="device/device='.$device['device_id'].'/tab=health/metric='.strtolower($sensor_type).'/"><i class="fa '.$sensor_fa_icon.' fa-lg icon-theme" aria-hidden="true"></i><strong> '.nicecase($sensor_type).'</strong></a>';
     echo '      </div>
         <table class="table table-hover table-condensed table-striped">';
     $group = '';
