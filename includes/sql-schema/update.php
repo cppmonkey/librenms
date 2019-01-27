@@ -25,9 +25,7 @@
  * @author     Tony Murray <murraytony@gmail.com>
  */
 
-use Artisan;
 use LibreNMS\Config;
-use LibreNMS\Exceptions\DatabaseConnectException;
 use LibreNMS\Exceptions\LockException;
 use LibreNMS\Util\FileLock;
 use LibreNMS\Util\MemcacheLock;
@@ -57,10 +55,7 @@ try {
         $migrate_opts['--seed'] = true;
         $return = Artisan::call('migrate', $migrate_opts);
         echo Artisan::output();
-    } elseif ($db_rev == 1000) {
-        $return = Artisan::call('migrate', $migrate_opts);
-        echo Artisan::output();
-    } else {
+    } elseif ($db_rev < 1000) {
         // legacy update
         d_echo("DB Schema update started....\n");
 
@@ -104,6 +99,12 @@ try {
 
         echo "-- Done\n";
         // end legacy update
+        $db_rev = get_db_schema();
+    }
+
+    if ($db_rev == 1000) {
+        $return = Artisan::call('migrate', $migrate_opts);
+        echo Artisan::output();
     }
 
     if (isset($schemaLock)) {
