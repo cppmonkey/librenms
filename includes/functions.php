@@ -21,6 +21,8 @@ use LibreNMS\Exceptions\HostUnreachablePingException;
 use LibreNMS\Exceptions\InvalidPortAssocModeException;
 use LibreNMS\Exceptions\LockException;
 use LibreNMS\Exceptions\SnmpVersionUnsupportedException;
+use LibreNMS\Util\IPv4;
+use LibreNMS\Util\IPv6;
 use LibreNMS\Util\MemcacheLock;
 use Symfony\Component\Process\Process;
 
@@ -553,8 +555,13 @@ function addHost($host, $snmp_version = '', $port = '161', $transport = 'udp', $
     } else {
         $ip = $host;
     }
-    if ($force_add !== true && ip_exists($ip)) {
-        throw new HostIpExistsException("Already have host with this IP $host");
+    if ($force_add !== true && $device = device_has_ip($ip)) {
+        $message = "Cannot add $host, already have device with this IP $ip";
+        if ($ip != $device->hostname) {
+            $message .= " ($device->hostname)";
+        }
+        $message .= '. You may force add to ignore this.';
+        throw new HostIpExistsException($message);
     }
 
     // Test reachability
@@ -1034,29 +1041,7 @@ function send_mail($emails, $subject, $message, $html = false)
 
 function formatCiscoHardware(&$device, $short = false)
 {
-    if ($device['os'] == "ios") {
-        if ($device['hardware']) {
-            if (preg_match("/^WS-C([A-Za-z0-9]+)/", $device['hardware'], $matches)) {
-                if (!$short) {
-                    $device['hardware'] = "Catalyst " . $matches[1] . " (" . $device['hardware'] . ")";
-                } else {
-                    $device['hardware'] = "Catalyst " . $matches[1];
-                }
-            } elseif (preg_match("/^CISCO([0-9]+)(.*)/", $device['hardware'], $matches)) {
-                if (!$short && $matches[2]) {
-                    $device['hardware'] = "Cisco " . $matches[1] . " (" . $device['hardware'] . ")";
-                } else {
-                    $device['hardware'] = "Cisco " . $matches[1];
-                }
-            }
-        } else {
-            if (preg_match("/Cisco IOS Software, C([A-Za-z0-9]+) Software.*/", $device['sysDescr'], $matches)) {
-                $device['hardware'] = "Catalyst " . $matches[1];
-            } elseif (preg_match("/Cisco IOS Software, ([0-9]+) Software.*/", $device['sysDescr'], $matches)) {
-                $device['hardware'] = "Cisco " . $matches[1];
-            }
-        }
-    }
+    return \LibreNMS\Util\Rewrite::ciscoHardware($device, $short);
 }
 
 function hex2str($hex)
@@ -1478,19 +1463,31 @@ function fix_integer_value($value)
     return $return;
 }
 
-function ip_exists($ip)
+/**
+ * Find a device that has this IP. Checks ipv4_addresses and ipv6_addresses tables.
+ *
+ * @param string $ip
+ * @return \App\Models\Device|false
+ */
+function device_has_ip($ip)
 {
-    // Function to check if an IP exists in the DB already
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-        $dbresult = dbFetchRow("SELECT `ipv6_address_id` FROM `ipv6_addresses` WHERE `ipv6_address` = ? OR `ipv6_compressed` = ?", array($ip, $ip));
-        return !empty($dbresult);
-    } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-        $dbresult = dbFetchRow("SELECT `ipv4_address_id` FROM `ipv4_addresses` WHERE `ipv4_address` = ?", array($ip));
-        return !empty($dbresult);
+    if (IPv6::isValid($ip)) {
+        $ip_address = \App\Models\Ipv6Address::query()
+            ->where('ipv6_address', IPv6::parse($ip, true)->uncompressed())
+            ->with('port.device')
+            ->first();
+    } elseif (IPv4::isValid($ip)) {
+        $ip_address = \App\Models\Ipv4Address::query()
+            ->where('ipv4_address', $ip)
+            ->with('port.device')
+            ->first();
     }
 
-    // not an ipv4 or ipv6 address...
-    return false;
+    if (isset($ip_address) && $ip_address->port) {
+        return $ip_address->port->device;
+    }
+
+    return false; // not an ipv4 or ipv6 address...
 }
 
 /**
