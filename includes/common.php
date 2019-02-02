@@ -90,23 +90,23 @@ function external_exec($command)
 
     if ($debug && !$vdebug) {
         $patterns = [
-            '/-c\' \'[\S]+/',
-            '/-u\' \'[\S]+/',
-            '/-U\' \'[\S]+/',
-            '/-A\' \'[\S]+/',
-            '/-X\' \'[\S]+/',
-            '/-P\' \'[\S]+/',
-            '/-H\' \'[\S]+/',
+            '/-c\' \'[\S]+\'/',
+            '/-u\' \'[\S]+\'/',
+            '/-U\' \'[\S]+\'/',
+            '/-A\' \'[\S]+\'/',
+            '/-X\' \'[\S]+\'/',
+            '/-P\' \'[\S]+\'/',
+            '/-H\' \'[\S]+\'/',
             '/(udp|udp6|tcp|tcp6):([^:]+):([\d]+)/',
         ];
         $replacements = [
-            '-c\' \'COMMUNITY',
-            '-u\' \'USER',
-            '-u\' \'USER',
-            '-A\' \'PASSWORD',
-            '-X\' \'PASSWORD',
-            '-P\' \'PASSWORD',
-            '-H\' \'HOSTNAME',
+            '-c\' \'COMMUNITY\'',
+            '-u\' \'USER\'',
+            '-U\' \'USER\'',
+            '-A\' \'PASSWORD\'',
+            '-X\' \'PASSWORD\'',
+            '-P\' \'PASSWORD\'',
+            '-H\' \'HOSTNAME\'',
             '\1:HOSTNAME:\3',
         ];
 
@@ -1535,18 +1535,20 @@ function load_os(&$device)
     global $config;
 
     if (!isset($device['os'])) {
-        d_echo('No OS to load');
+        d_echo("No OS to load\n");
         return;
     }
 
-    $tmp_os = Symfony\Component\Yaml\Yaml::parse(
-        file_get_contents($config['install_dir'] . '/includes/definitions/' . $device['os'] . '.yaml')
-    );
+    if (!isset($config['os'][$device['os']]['definition_loaded'])) {
+        $tmp_os = Symfony\Component\Yaml\Yaml::parse(
+            file_get_contents($config['install_dir'] . '/includes/definitions/' . $device['os'] . '.yaml')
+        );
 
-    if (isset($config['os'][$device['os']])) {
-        $config['os'][$device['os']] = array_replace_recursive($tmp_os, $config['os'][$device['os']]);
-    } else {
-        $config['os'][$device['os']] = $tmp_os;
+        if (isset($config['os'][$device['os']])) {
+            $config['os'][$device['os']] = array_replace_recursive($tmp_os, $config['os'][$device['os']]);
+        } else {
+            $config['os'][$device['os']] = $tmp_os;
+        }
     }
 
     // Set type to a predefined type for the OS if it's not already set
@@ -1562,6 +1564,8 @@ function load_os(&$device)
     } else {
         unset($device['os_group']);
     }
+
+    $config['os'][$device['os']]['definition_loaded'] = true;
 }
 
 /**
