@@ -25,7 +25,6 @@ discovery_modules:
     cisco-vrf-lite: false
     discovery-protocols: false
     entity-physical: false
-    entity-state: false
     fdb-table: false
     hr-device: false
     ipv4-addresses: false
