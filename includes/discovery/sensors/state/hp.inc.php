@@ -51,8 +51,6 @@ foreach ($tables as $tablevalue) {
     if (!empty($temp)) {
         //Create State Index
         $state_name = $oid;
-        $state_index_id = create_state_index($state_name, $states);
-
         foreach ($temp as $index => $entry) {
             $drive_bay = snmp_get($device, "cpqDaPhyDrvBay.$index", '-Ovqn', 'CPQIDA-MIB');
 
