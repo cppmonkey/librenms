@@ -179,10 +179,5 @@ if (!empty($oids_disks)) {
 }//end if empty oids
 
 unset(
-    $oid_disks,
-    $disks_base_oid,
-    $disks_state_name,
-    $disks_state_index_id,
-    $disk_states,
-    $insert
+    $disks_base_oid
 );
