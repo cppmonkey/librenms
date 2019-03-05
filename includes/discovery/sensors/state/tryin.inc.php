@@ -23,13 +23,21 @@
  * @author     Paul Parsons <paul@cppmonkey.net>
  */
 
-foreach (range(1, 16) as $card) {
-    $state_name = 'vCardState';
-    $states = [
-        ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
-        ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
-    ];
-    create_state_index($state_name, $states);
+$state_name = 'vCardState';
+$states = [
+    ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
+    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'vWorkMode';
+$states = [
+    ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'acc'],
+    ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'apc'],
+    ['value' => 3, 'generic' => 0, 'graph' => 2, 'descr' => 'agc'],
+];
+create_state_index($state_name, $states);
+
 $state_name = 'vstatus';
 $states = [
     ['value' => 0, 'generic' => 0, 'graph' => 0, 'descr' => 'OK'],
@@ -38,6 +46,21 @@ $states = [
 ];
 create_state_index($state_name, $states);
 
+$state_name = 'vPUMPSwitch';
+$states = [
+    ['value' => 0, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
+    ['value' => 1, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'EDFA_NormalAlarm';
+$states = [
+    ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Alarm'],
+    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Normal'],
+];
+create_state_index($state_name, $states);
+
+foreach (range(1, 16) as $card) {
     $type = '1';
     $mib_file = sprintf('OAP-C%d-EDFA', $card);
     $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovq', $mib_file);
@@ -48,6 +71,7 @@ create_state_index($state_name, $states);
     $index = substr($num_oid, 24);
 
     if (is_numeric($current)) {
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -59,13 +83,6 @@ create_state_index($state_name, $states);
 
     if (is_numeric($current)) {
         $state_name = 'vWorkMode';
-        $states = [
-            ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'acc'],
-            ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'apc'],
-            ['value' => 3, 'generic' => 0, 'graph' => 2, 'descr' => 'agc'],
-        ];
-        create_state_index($state_name, $states);
-
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -77,23 +94,11 @@ create_state_index($state_name, $states);
 
     if (is_numeric($current)) {
         $state_name = 'vPUMPSwitch';
-        $states = [
-            ['value' => 0, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
-            ['value' => 1, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
-        ];
-        create_state_index($state_name, $states);
-
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $state_name = 'EDFA_NormalAlarm';
-    $states = [
-        ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Alarm'],
-        ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Normal'],
-    ];
-    create_state_index($state_name, $states);
-
     $current = snmp_get($device, 'vInputPowerState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.16.0', $card, $type);
     $descr = 'Input Power';
@@ -133,7 +138,6 @@ create_state_index($state_name, $states);
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
-
 
     $current = snmp_get($device, 'vPUMPCurrentState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.20.0', $card, $type);
