@@ -25,10 +25,10 @@
 
 foreach (range(1, 16) as $card) {
     $state_name = 'vCardState';
-    $states = array(
-        array('value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'),
-        array('value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On')
-    );
+    $states = [
+        ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
+        ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
+    ];
     create_state_index($state_name, $states);
 
     $type = '1';
@@ -50,11 +50,11 @@ foreach (range(1, 16) as $card) {
 
     if (is_numeric($edfa_card_work_mode)) {
         $state_name = 'vWorkMode';
-        $states = array(
-            array('value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'acc'),
-            array('value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'apc'),
-            array('value' => 3, 'generic' => 0, 'graph' => 2, 'descr' => 'agc')
-        );
+        $states = [
+            ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'acc'],
+            ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'apc'],
+            ['value' => 3, 'generic' => 0, 'graph' => 2, 'descr' => 'agc'],
+        ];
         create_state_index($state_name, $states);
 
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_work_mode, 'snmp', null, null, null, $group);
@@ -68,10 +68,10 @@ foreach (range(1, 16) as $card) {
 
     if (is_numeric($edfa_card_pump_switch)) {
         $state_name = 'vPUMPSwitch';
-        $states = array(
-            array('value' => 0, 'generic' => 0, 'graph' => 1, 'descr' => 'On'),
-            array('value' => 1, 'generic' => 2, 'graph' => 0, 'descr' => 'Off')
-        );
+        $states = [
+            ['value' => 0, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
+            ['value' => 1, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
+        ];
         create_state_index($state_name, $states);
 
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_pump_switch, 'snmp', null, null, null, $group);
@@ -79,10 +79,10 @@ foreach (range(1, 16) as $card) {
     }
 
     $state_name = 'EDFA_NormalAlarm';
-    $states = array(
-        array('value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Alarm'),
-        array('value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Normal')
-    );
+    $states = [
+        ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Alarm'],
+        ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Normal'],
+    ];
     create_state_index($state_name, $states);
 
     $edfa_card_input_power_state = snmp_get($device, 'vInputPowerState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
