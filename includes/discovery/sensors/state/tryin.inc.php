@@ -30,6 +30,13 @@ foreach (range(1, 16) as $card) {
         ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
     ];
     create_state_index($state_name, $states);
+$state_name = 'vstatus';
+$states = [
+    ['value' => 0, 'generic' => 0, 'graph' => 0, 'descr' => 'OK'],
+    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'MUTE'],
+    ['value' => 2, 'generic' => 0, 'graph' => 2, 'descr' => 'ERROR'],
+];
+create_state_index($state_name, $states);
 
     $type = '1';
     $mib_file = sprintf('OAP-C%d-EDFA', $card);
@@ -369,12 +376,28 @@ foreach (range(1, 16) as $card) {
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
+    $type = '9';
+    $mib_file = sprintf('OAP-C%d-YEDFA', $card);
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovq', $mib_file);
+    $group = sprintf('%s Card %d', 'YEDFA' /* $deviceType */, $card);
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
     $descr = 'State';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($osw_card_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $osw_card_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+        create_sensor_to_state_index($device, $state_name, $index);
+    }
+
+    $current = snmp_get($device, 'vWorkMode.0', '-Ovqe', $mib_file);
+    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.8.0', $card, $type);
+    $descr = 'Status';
+    $index = substr($num_oid, 24);
+
+    if (is_numeric($current)) {
+        $state_name = 'vstatus';
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 }
