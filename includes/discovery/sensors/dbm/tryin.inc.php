@@ -25,6 +25,9 @@
 
 $dev_type = 'tryin';
 
+$multiplier = 1;
+$divisor    = 100;
+
 foreach (range(1, 16) as $card) {
     $type = '1';
     $group = sprintf('EDFA Card %d', $card);
@@ -37,7 +40,8 @@ foreach (range(1, 16) as $card) {
             $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.28.0', $card, $type);
             $descr = 'Input Power';
             $index = substr($num_oid, 24);
-            discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, 100, 1, null, null, null, null, $edfa_card_input, 'snmp', null, null, null, $group);
+            $current = $$edfa_card_input / $divisor;
+            discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
         }
 
         $edfa_card_output = snmp_get($device, 'vOutput.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
@@ -46,7 +50,8 @@ foreach (range(1, 16) as $card) {
             $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.29.0', $card, $type);
             $descr = 'Output Power';
             $index = substr($num_oid, 24);
-            discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, 100, 1, null, null, null, null, $edfa_card_output, 'snmp', null, null, null, $group);
+            $current = $$edfa_card_input / $divisor;
+            discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
         }
     }
 
@@ -66,7 +71,8 @@ foreach (range(1, 16) as $card) {
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($oeo_sfp_power)) {
-                    discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, 100, '1', null, null, null, null, $oeo_sfp_power, 'snmp', null, null, null, $group);
+                    $current = $oeo_sfp_power / $divisor;
+                    discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
                 }
                 $oeo_sfp_power = snmp_get($device, sprintf('vSFP%s%dRxPower.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.5.0', $card, $type, $channel_oid);
@@ -74,7 +80,8 @@ foreach (range(1, 16) as $card) {
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($oeo_sfp_power)) {
-                    discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, 100, '1', null, null, null, null, $oeo_sfp_power, 'snmp', null, null, null, $group);
+                    $current = $oeo_sfp_power / $divisor;
+                    discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
                 }
                 $channel_oid++;
             }
