@@ -32,23 +32,25 @@ foreach (range(1, 16) as $card) {
     create_state_index($state_name, $states);
 
     $type = '1';
-    $group = sprintf('EDFA Card %d', $card);
-    $edfa_card_state = snmp_get($device, 'vCardState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $mib_file = sprintf('OAP-C%d-EDFA', $card);
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovq', $mib_file);
+    $group = sprintf('%s Card %d', 'EDFA' /* $deviceType */, $card);
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
     $descr = 'State';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $edfa_card_work_mode = snmp_get($device, 'vWorkMode.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vWorkMode.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.8.0', $card, $type);
     $descr = 'Work Mode';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_work_mode)) {
+    if (is_numeric($current)) {
         $state_name = 'vWorkMode';
         $states = [
             ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'acc'],
@@ -57,16 +59,16 @@ foreach (range(1, 16) as $card) {
         ];
         create_state_index($state_name, $states);
 
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_work_mode, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $edfa_card_pump_switch = snmp_get($device, 'vPUMPSwitch.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vPUMPSwitch.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.9.0', $card, $type);
     $descr = 'PUMP Switch';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_pump_switch)) {
+    if (is_numeric($current)) {
         $state_name = 'vPUMPSwitch';
         $states = [
             ['value' => 0, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
@@ -74,7 +76,7 @@ foreach (range(1, 16) as $card) {
         ];
         create_state_index($state_name, $states);
 
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_pump_switch, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
@@ -85,109 +87,112 @@ foreach (range(1, 16) as $card) {
     ];
     create_state_index($state_name, $states);
 
-    $edfa_card_input_power_state = snmp_get($device, 'vInputPowerState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vInputPowerState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.16.0', $card, $type);
     $descr = 'Input Power';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_input_power_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_input_power_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $edfa_card_output_power_state = snmp_get($device, 'vOutputPowerState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vOutputPowerState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.17.0', $card, $type);
     $descr = 'Output Power';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_output_power_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_output_power_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $edfa_card_module_temp_state = snmp_get($device, 'vModuleTemperatureState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vModuleTemperatureState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.18.0', $card, $type);
     $descr = 'Module Temp';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_module_temp_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_module_temp_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $edfa_card_pump_temp_state = snmp_get($device, 'vPUMPTemperatureState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vPUMPTemperatureState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.19.0', $card, $type);
     $descr = 'Pump Temp';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_pump_temp_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_pump_temp_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $edfa_card_pump_current_state = snmp_get($device, 'vPUMPCurrentState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+
+    $current = snmp_get($device, 'vPUMPCurrentState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.20.0', $card, $type);
     $descr = 'Pump Current';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_pump_current_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_pump_current_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $type = '2';
     $mib_file = sprintf('OAP-C%d-OEO', $card);
-    $group = sprintf('OEO Card %d', $card);
-    $oeo_card_state = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovq', $mib_file);
+    $group = sprintf('%s Card %d', 'OEO' /* $deviceType */, $card);
+
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
     $descr = 'State';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($oeo_card_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $oeo_card_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
 
         // Descover SPF Optics
         $channel_oid = 11;
         foreach (range('A', 'D') as $channel) {
             foreach (range(1, 2) as $optic) {
-                $oeo_sfp_state = snmp_get($device, sprintf('vSFP%s%dState.0', $channel, $optic), '-Ovqe', $mib_file);
+                $current = snmp_get($device, sprintf('vSFP%s%dState.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.1.0', $card, $type, $channel_oid);
                 $descr = sprintf('SFP %s%d State', $channel, $optic);
                 $index = substr($num_oid, 24);
 
-                if (is_numeric($oeo_sfp_state)) {
-                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $oeo_sfp_state, 'snmp', null, null, null, $group);
+                if (is_numeric($current)) {
+                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
 
-                $oeo_sfp_tx_power_alarm = snmp_get($device, sprintf('vSFP%s%dTxPowerAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
+                $current = snmp_get($device, sprintf('vSFP%s%dTxPowerAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.10.0', $card, $type, $channel_oid);
                 $descr = sprintf('SFP %s%d Tx Power Alarm', $channel, $optic);
                 $index = substr($num_oid, 24);
 
-                if (is_numeric($oeo_sfp_tx_power_alarm)) {
-                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $oeo_sfp_tx_power_alarm, 'snmp', null, null, null, $group);
+                if (is_numeric($current)) {
+                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
 
-                $oeo_sfp_rx_power_alarm = snmp_get($device, sprintf('vSFP%s%dRxPowerAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
+                $current = snmp_get($device, sprintf('vSFP%s%dRxPowerAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.11.0', $card, $type, $channel_oid);
                 $descr = sprintf('SFP %s%d Rx Power Alarm', $channel, $optic);
                 $index = substr($num_oid, 24);
 
-                if (is_numeric($oeo_sfp_rx_power_alarm)) {
-                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $oeo_sfp_rx_power_alarm, 'snmp', null, null, null, $group);
+                if (is_numeric($current)) {
+                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
 
-                $oeo_sfp_mode_temperature_alarm = snmp_get($device, sprintf('vSFP%s%dModeTemperatureAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
+                $current = snmp_get($device, sprintf('vSFP%s%dModeTemperatureAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.11.0', $card, $type, $channel_oid);
                 $descr = sprintf('SFP %s%d Mode Temperature Alarm', $channel, $optic);
                 $index = substr($num_oid, 24);
 
-                if (is_numeric($oeo_sfp_mode_temperature)) {
-                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $oeo_sfp_mode_temperature, 'snmp', null, null, null, $group);
+                if (is_numeric($current)) {
+                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
                 $channel_oid++;
@@ -196,145 +201,174 @@ foreach (range(1, 16) as $card) {
     }
 
     $type = '3';
-    $mib_file = sprintf('OAP-C%d-OLP', $card);
-    $group = sprintf('OLP Card %d', $card);
+    $mib_file = sprintf('OAP-C%d-OLP', $card); // glsun-OXC or tryin-OLP
+    $deviceType = snmp_get($device, 'c1DeviceType.0', '-Ovq', $mib_file);
+    $group = sprintf('%s Card %d', 'OLP' /* $deviceType */, $card);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
-    $olp_card_c1state = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
+    $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
 
-    if (is_numeric($olp_card_c1state)) {
+    if (is_numeric($current)) {
         $descr = 'State';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $olp_card_c1state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.8.0', $card, $type);
-    $olp_card_c1workmode = snmp_get($device, 'c1WorkMode.0', '-Ovqe', $mib_file);
+    $current = snmp_get($device, 'c1WorkMode.0', '-Ovqe', $mib_file);
 
-    if (is_numeric($olp_card_c1workmode)) {
+    if (is_numeric($current)) {
         $descr = 'Work Mode';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $olp_card_c1workmode, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.9.0', $card, $type);
-    $olp_card_c1channel = snmp_get($device, 'c1Channel.0', '-Ovqe', $mib_file);
+    $current = snmp_get($device, 'c1Channel.0', '-Ovqe', $mib_file);
 
-    if (is_numeric($olp_card_c1channel)) {
+    if (is_numeric($current)) {
         $descr = 'Channel';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $olp_card_c1channel, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.9.0', $card, $type);
-    $olp_card_c1workmodesave = snmp_get($device, 'c1Channel.0', '-Ovqe', $mib_file);
+    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.10.0', $card, $type);
+    $current = snmp_get($device, 'c1workmodesave.0', '-Ovqe', $mib_file);
 
-    if (is_numeric($olp_card_c1workmodesave)) {
+    if (is_numeric($current)) {
         $descr = 'Work Mode Save';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $olp_card_c1workmodesave, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.22.0', $card, $type);
-    $olp_card_c1backmode = snmp_get($device, 'c1BackMode.0', '-Ovqe', $mib_file);
+    $current = snmp_get($device, 'c1BackMode.0', '-Ovqe', $mib_file);
 
-    if (is_numeric($olp_card_c1backmode)) {
+    if (is_numeric($current)) {
         $descr = 'Back Mode';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $olp_card_c1backmode, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $type = '4';
-    $group = sprintf('Type 4 Card %d', $card);
-    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
-    $type_4_card_state = snmp_get($device, $num_oid, '-Ovqet', '');
+    /*
+    $mib_file = sprintf('OAP-C%d-EDFA', $card); //FIXME Card Type?
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovq', $mib_file);
+    */
+    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.2.0', $card, $type);
+    $deviceType = snmp_get($device, $num_oid, '-OQv');
 
-    if (is_numeric($type_4_card_state)) {
+    $group = sprintf('%s Card %d', $deviceType, $card);
+    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
+    $current = snmp_get($device, $num_oid, '-Ovqet');
+
+    if (is_numeric($current)) {
         $descr = 'State';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $type_4_card_state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.2.0', $card, $type);
-    $type_4_card_state = snmp_get($device, $num_oid, '-Ovqet', '');
+    $current = snmp_get($device, $num_oid, '-Ovqet');
 
-    if (is_numeric($type_4_card_state)) {
+    if (is_numeric($current)) {
         $descr = 'Type';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $type_4_card_state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.3.0', $card, $type);
-    $type_4_card_state = snmp_get($device, $num_oid, '-Ovqet', '');
+    $current = snmp_get($device, $num_oid, '-Ovqet');
 
-    if (is_numeric($type_4_card_state)) {
+    if (is_numeric($current)) {
         $descr = 'Descr';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $type_4_card_state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $type = '5';
-    $group = sprintf('Type 5 Card %d', $card);
+    /*
+    $mib_file = sprintf('OAP-C%d-EDFA', $card); //FIXME Card Type?
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovq', $mib_file);
+    */
+    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.2.0', $card, $type);
+    $deviceType = snmp_get($device, $num_oid, '-OQv');
+    $group = sprintf('%s Card %d', $deviceType, $card);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
-    $type_5_card_state = snmp_get($device, $num_oid, '-Ovqet', '');
+    $current = snmp_get($device, $num_oid, '-Ovqet');
 
-    if (is_numeric($type_5_card_state)) {
+    if (is_numeric($current)) {
         $descr = 'State';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $type_5_card_state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.2.0', $card, $type);
-    $type_5_card_state = snmp_get($device, $num_oid, '-Ovqet', '');
+    $current = snmp_get($device, $num_oid, '-Ovqet');
 
-    if (is_numeric($type_5_card_state)) {
+    if (is_numeric($current)) {
         $descr = 'Type';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $type_5_card_state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.3.0', $card, $type);
-    $type_5_card_state = snmp_get($device, $num_oid, '-Ovqet', '');
+    $current = snmp_get($device, $num_oid, '-Ovqet');
 
-    if (is_numeric($type_5_card_state)) {
+    if (is_numeric($current)) {
         $descr = 'Descr';
         $index = substr($num_oid, 24);
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $type_5_card_state, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $type = '6';
-    $group = sprintf('VOA Card %d', $card);
-    $voa_card_state = snmp_get($device, 'vCardState.0', '-Ovqe', sprintf('OAP-C%d-VOA', $card));
+    $mib_file = sprintf('OAP-C%d-VOA', $card);
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-OQv', $mib_file);
+    $group = sprintf('%s Card %d', 'VOA' /* $deviceType */, $card);
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
     $descr = 'State';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($voa_card_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $voa_card_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $type = '7';
-    $group = sprintf('DEDFA Card %d', $card);
-    $edfa_card_state = snmp_get($device, 'vCardState.0', '-Ovqe', sprintf('OAP-C%d-DEDFA', $card));
+    $mib_file = sprintf('OAP-C%d-DEDFA', $card);
+    $deviceType = snmp_get($device, 'vDeviceType.0', '-OQv', $mib_file);
+    $group = sprintf('%s Card %d', 'DEDFA' /* $deviceType */, $card);
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
     $descr = 'State';
     $index = substr($num_oid, 24);
 
-    if (is_numeric($edfa_card_state)) {
-        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, '1', '1', null, null, null, null, $edfa_card_state, 'snmp', null, null, null, $group);
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
     $type = '8';
-    $group = sprintf('OSW Card %d', $card);
-    $osw_card_state = snmp_get($device, 'c1State.0', '-Ovqe', sprintf('OAP-C%d-OSW', $card));
+    $mib_file = sprintf('OAP-C%d-OSW', $card);
+    $deviceType = snmp_get($device, 'c1DeviceType.0', '-Ovq', $mib_file);
+    $group = sprintf('%s Card %d', 'OSW' /* $deviceType */, $card);
+    $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
+    $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
+    $descr = 'State';
+    $index = substr($num_oid, 24);
+
+    if (is_numeric($current)) {
+        discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+        create_sensor_to_state_index($device, $state_name, $index);
+    }
+
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
     $descr = 'State';
     $index = substr($num_oid, 24);
