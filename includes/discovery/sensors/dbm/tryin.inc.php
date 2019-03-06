@@ -66,9 +66,13 @@ foreach (range(1, 16) as $card) {
         $channel_oid = 11;
         foreach (range('A', 'D') as $channel) {
             foreach (range(1, 2) as $optic) {
+                $distance   = snmp_get($device, sprintf('vSFP%s%dModeTrasmissionDistance.0', $channel, $optic), '-Ovq', $mib_file);
+                $speed      = snmp_get($device, sprintf('vSFP%s%dModeTrasmissionRate.0', $channel, $optic), '-Ovq', $mib_file);
+                $wave       = snmp_get($device, sprintf('vSFP%s%dModeWave.0', $channel, $optic), '-Ovq', $mib_file);
+
                 $current = snmp_get($device, sprintf('vSFP%s%dTxPower.0', $channel, $optic), '-Ovq', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.4.0', $card, $type, $channel_oid);
-                $descr = sprintf('SFP %s%d Tx Power', $channel, $optic);
+                $descr = sprintf('SFP %s%d Tx Power (%dG %dnm %dkm)', $channel, $optic, $speed / 100, $wave / 100 , $distance / 1000 );
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
@@ -77,7 +81,7 @@ foreach (range(1, 16) as $card) {
                 }
                 $current = snmp_get($device, sprintf('vSFP%s%dRxPower.0', $channel, $optic), '-Ovq', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.5.0', $card, $type, $channel_oid);
-                $descr = sprintf('SFP %s%d Rx Power', $channel, $optic);
+                $descr = sprintf('SFP %s%d Rx Power (%dG %dnm %dkm)', $channel, $optic, $speed / 100, $wave / 100 , $distance / 1000 );
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
