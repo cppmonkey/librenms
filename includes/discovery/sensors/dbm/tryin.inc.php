@@ -30,11 +30,12 @@ $divisor    = 100;
 
 foreach (range(1, 16) as $card) {
     $type = '1';
+    $mib_file = sprintf('OAP-C%d-EDFA', $card);
     $group = sprintf('EDFA Card %d', $card);
-    $current = snmp_get($device, 'vCardState.0', '-Ovqe', sprintf('OAP-C%d-EDFA', $card));
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
-        $current = snmp_get($device, 'vInput.0', '-Ovq', sprintf('OAP-C%d-EDFA', $card));
+        $current = snmp_get($device, 'vInput.0', '-Ovq', $mib_file);
 
         if (is_numeric($current)) {
             $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.28.0', $card, $type);
@@ -44,7 +45,7 @@ foreach (range(1, 16) as $card) {
             discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
         }
 
-        $current = snmp_get($device, 'vOutput.0', '-Ovq', sprintf('OAP-C%d-EDFA', $card));
+        $current = snmp_get($device, 'vOutput.0', '-Ovq', $mib_file);
 
         if (is_numeric($current)) {
             $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.29.0', $card, $type);
@@ -89,8 +90,9 @@ foreach (range(1, 16) as $card) {
     }
 
     $type = '3';
+    $mib_file = sprintf('OAP-C%d-OLP', $card); // glsun-OXC or tryin-OLP
     $group = sprintf('OLP Card %d', $card);
-    $current = snmp_get($device, 'c1State.0', '-Ovqe', sprintf('OAP-C%d-OLP', $card));
+    $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
         $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
@@ -100,8 +102,9 @@ foreach (range(1, 16) as $card) {
     }
 
     $type = '6';
+    $mib_file = sprintf('OAP-C%d-VOA', $card);
     $group = sprintf('VOA Card %d', $card);
-    $current = snmp_get($device, 'vCardState.0', '-Ovqe', sprintf('OAP-C%d-VOA', $card));
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
         $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
@@ -111,8 +114,9 @@ foreach (range(1, 16) as $card) {
     }
 
     $type = '7';
+    $mib_file = sprintf('OAP-C%d-DEDFA', $card);
     $group = sprintf('DEDFA Card %d', $card);
-    $current = snmp_get($device, 'vCardState.0', '-Ovqe', sprintf('OAP-C%d-DEDFA', $card));
+    $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
         $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
@@ -122,8 +126,9 @@ foreach (range(1, 16) as $card) {
     }
 
     $type = '8';
+    $mib_file = sprintf('OAP-C%d-OSW', $card);
     $group = sprintf('OSW Card %d', $card);
-    $current = snmp_get($device, 'c1State.0', '-Ovqe', sprintf('OAP-C%d-OSW', $card));
+    $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
         $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.1.0', $card, $type);
