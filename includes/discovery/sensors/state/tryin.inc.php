@@ -25,38 +25,75 @@
 
 $state_name = 'vCardState';
 $states = [
-    ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
+    ['value' => 0, 'generic' => 1, 'graph' => 0, 'descr' => 'Off'],
     ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
 ];
 create_state_index($state_name, $states);
 
 $state_name = 'vWorkMode';
 $states = [
-    ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'acc'],
-    ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'apc'],
-    ['value' => 3, 'generic' => 0, 'graph' => 2, 'descr' => 'agc'],
+    ['value' => 1, 'generic' => 3, 'graph' => 0, 'descr' => 'ACC'],
+    ['value' => 2, 'generic' => 3, 'graph' => 1, 'descr' => 'APC'],
+    ['value' => 3, 'generic' => 0, 'graph' => 2, 'descr' => 'AGC (Automatic Gain Control)'],
 ];
 create_state_index($state_name, $states);
 
 $state_name = 'vstatus';
 $states = [
     ['value' => 0, 'generic' => 0, 'graph' => 0, 'descr' => 'OK'],
-    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'MUTE'],
-    ['value' => 2, 'generic' => 0, 'graph' => 2, 'descr' => 'ERROR'],
+    ['value' => 1, 'generic' => 1, 'graph' => 1, 'descr' => 'MUTE'],
+    ['value' => 2, 'generic' => 2, 'graph' => 2, 'descr' => 'ERROR'],
 ];
 create_state_index($state_name, $states);
 
 $state_name = 'vPUMPSwitch';
 $states = [
     ['value' => 0, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
-    ['value' => 1, 'generic' => 2, 'graph' => 0, 'descr' => 'Off'],
+    ['value' => 1, 'generic' => 1, 'graph' => 0, 'descr' => 'Off'],
 ];
 create_state_index($state_name, $states);
 
-$state_name = 'EDFA_NormalAlarm';
+$state_name = 'NormalAlarm';
 $states = [
     ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'Alarm'],
     ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Normal'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'c1WorkModeSave';
+$states = [
+    ['value' => 0, 'generic' => 2, 'graph' => 0, 'descr' => 'noSave'],
+    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Save'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'c1Channel';
+$states = [
+    ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'Main'],
+    ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'Sub'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'ManualAuto';
+$states = [
+    ['value' => 0, 'generic' => 0, 'graph' => 0, 'descr' => 'Manual'],
+    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'Auto'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'SfpWorkMode';
+$states = [
+    ['value' => 1, 'generic' => 0, 'graph' => 0, 'descr' => 'Normal'],
+    ['value' => 2, 'generic' => 1, 'graph' => 1, 'descr' => 'FC'],
+    ['value' => 3, 'generic' => 1, 'graph' => 2, 'descr' => 'Loopback'],
+];
+create_state_index($state_name, $states);
+
+$state_name = 'SfpPowerControl';
+$states = [
+    ['value' => 0, 'generic' => 1, 'graph' => 0, 'descr' => 'Off'],
+    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
+    ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'Auto'],
 ];
 create_state_index($state_name, $states);
 
@@ -98,7 +135,7 @@ foreach (range(1, 16) as $card) {
         create_sensor_to_state_index($device, $state_name, $index);
     }
 
-    $state_name = 'EDFA_NormalAlarm';
+    $state_name = 'NormalAlarm';
     $current = snmp_get($device, 'vInputPowerState.0', '-Ovqe', $mib_file);
     $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.16.0', $card, $type);
     $descr = 'Input Power';
@@ -173,6 +210,29 @@ foreach (range(1, 16) as $card) {
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
+                    $state_name = 'vCardState';
+                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+                    create_sensor_to_state_index($device, $state_name, $index);
+                }
+
+                $current = snmp_get($device, sprintf('vSFP%s%dWorkMode.0', $channel, $optic), '-Ovqe', $mib_file);
+                $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.2.0', $card, $type, $channel_oid);
+                $descr = sprintf('SFP %s%d Work Mode', $channel, $optic);
+                $index = substr($num_oid, 24);
+
+                if (is_numeric($current)) {
+                    $state_name = 'SfpWorkMode';
+                    discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+                    create_sensor_to_state_index($device, $state_name, $index);
+                }
+
+                $current = snmp_get($device, sprintf('vSFP%s%dTxPowerControl.0', $channel, $optic), '-Ovqe', $mib_file);
+                $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.3.0', $card, $type, $channel_oid);
+                $descr = sprintf('SFP %s%d Tx Power Control', $channel, $optic);
+                $index = substr($num_oid, 24);
+
+                if (is_numeric($current)) {
+                    $state_name = 'SfpPowerControl';
                     discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
@@ -183,6 +243,7 @@ foreach (range(1, 16) as $card) {
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
+                    $state_name = 'NormalAlarm';
                     discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
@@ -193,6 +254,7 @@ foreach (range(1, 16) as $card) {
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
+                    $state_name = 'NormalAlarm';
                     discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
@@ -203,6 +265,7 @@ foreach (range(1, 16) as $card) {
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
+                    $state_name = 'NormalAlarm';
                     discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
                     create_sensor_to_state_index($device, $state_name, $index);
                 }
@@ -221,6 +284,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'State';
         $index = substr($num_oid, 24);
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -231,6 +295,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'Work Mode';
         $index = substr($num_oid, 24);
+        $state_name = 'ManualAuto';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -241,6 +306,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'Channel';
         $index = substr($num_oid, 24);
+        $state_name = 'c1Channel';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -251,6 +317,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'Work Mode Save';
         $index = substr($num_oid, 24);
+        $state_name = 'ManualAuto';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -261,6 +328,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'Back Mode';
         $index = substr($num_oid, 24);
+        $state_name = 'ManualAuto';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -280,6 +348,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'State';
         $index = substr($num_oid, 24);
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -316,6 +385,7 @@ foreach (range(1, 16) as $card) {
     if (is_numeric($current)) {
         $descr = 'State';
         $index = substr($num_oid, 24);
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -348,6 +418,7 @@ foreach (range(1, 16) as $card) {
     $index = substr($num_oid, 24);
 
     if (is_numeric($current)) {
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -362,6 +433,7 @@ foreach (range(1, 16) as $card) {
     $index = substr($num_oid, 24);
 
     if (is_numeric($current)) {
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -376,6 +448,7 @@ foreach (range(1, 16) as $card) {
     $index = substr($num_oid, 24);
 
     if (is_numeric($current)) {
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
@@ -390,6 +463,7 @@ foreach (range(1, 16) as $card) {
     $index = substr($num_oid, 24);
 
     if (is_numeric($current)) {
+        $state_name = 'vCardState';
         discover_sensor($valid['sensor'], 'state', $device, $num_oid, $index, $state_name, $descr, 1, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
         create_sensor_to_state_index($device, $state_name, $index);
     }
