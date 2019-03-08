@@ -92,7 +92,7 @@ create_state_index($state_name, $states);
 $state_name = 'SfpPowerControl';
 $states = [
     ['value' => 0, 'generic' => 1, 'graph' => 0, 'descr' => 'Off'],
-    ['value' => 1, 'generic' => 0, 'graph' => 1, 'descr' => 'On'],
+    ['value' => 1, 'generic' => 1, 'graph' => 1, 'descr' => 'On'],
     ['value' => 2, 'generic' => 0, 'graph' => 1, 'descr' => 'Auto'],
 ];
 create_state_index($state_name, $states);
