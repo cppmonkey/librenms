@@ -261,7 +261,7 @@ foreach (range(1, 16) as $card) {
                 }
 
                 $current = snmp_get($device, sprintf('vSFP%s%dModeTemperatureAlarm.0', $channel, $optic), '-Ovqe', $mib_file);
-                $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.11.0', $card, $type, $channel_oid);
+                $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.12.0', $card, $type, $channel_oid);
                 $descr = sprintf('SFP %s%d Mode Temperature Alarm', $channel, $optic);
                 $index = substr($num_oid, 24);
 
