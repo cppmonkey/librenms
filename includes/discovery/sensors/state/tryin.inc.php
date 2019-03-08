@@ -204,6 +204,7 @@ foreach (range(1, 16) as $card) {
         $channel_oid = 11;
         foreach (range('A', 'D') as $channel) {
             foreach (range(1, 2) as $optic) {
+                $group = sprintf('%s Card %d - SFP %s%d', $deviceType, $card, $channel, $optic);
                 $current = snmp_get($device, sprintf('vSFP%s%dState.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.1.0', $card, $type, $channel_oid);
                 $descr = sprintf('SFP %s%d State', $channel, $optic);

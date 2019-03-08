@@ -67,6 +67,7 @@ foreach (range(1, 16) as $card) {
         // Descover SPF Optics
         $channel_oid = 11;
         foreach (range('A', 'D') as $channel) {
+            $group = sprintf('%s Card %d SFP Channel %s',$deviceType, $card, $channel);
             foreach (range(1, 2) as $optic) {
                 $distance   = snmp_get($device, sprintf('vSFP%s%dModeTransmissionDistance.0', $channel, $optic), '-Ovq', $mib_file);
                 $speed      = snmp_get($device, sprintf('vSFP%s%dModeTransmissionRate.0', $channel, $optic), '-Ovq', $mib_file);
