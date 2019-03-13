@@ -77,17 +77,21 @@ foreach (range(1, 16) as $card) {
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.4.0', $card, $type, $channel_oid);
 
                 // Older chassis report the wave length to the nearest decimal. Detect and adjust for this
-                $waveDivisor = 100;
+                $waveLength = "";
                 if (strpos($pre_cache['tryin_nmu_sv'], 'SV1.02') !== false) {
-                    $waveDivisor = 10;
+                    $waveDivisor = 1;
+                    $waveLength = sprintf('%.0fnm', $wave);
+                } else {
+                    $waveDivisor = 100;
+                    $waveLength = sprintf('%.2fnm', $wave / $waveDivisor);
                 }
 
                 // Detect and shorten 10G speed definition
                 $opticDetails = "";
                 if ($speed > 10000) {
-                    $opticDetails = sprintf('%.1fG %.2fnm %dkm', $speed / 1000, $wave / $waveDivisor, $distance / 1000);
+                    $opticDetails = sprintf('%.1fG %s %dkm', $speed / 1000, $waveLength, $distance / 1000);
                 } else {
-                    $opticDetails = sprintf('%.2fG %.2fnm %dkm', $speed / 1000, $wave / $waveDivisor, $distance / 1000);
+                    $opticDetails = sprintf('%.2fG %s %dkm', $speed / 1000, $waveLength, $distance / 1000);
                 }
 
                 $descr = sprintf('SFP %s%d Tx Power (%s)', $channel, $optic, $opticDetails);
