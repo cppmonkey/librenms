@@ -22,11 +22,9 @@
  * @copyright  2019 Paul Parsons
  * @author     Paul Parsons <paul@cppmonkey.net>
  */
-
 $busVoltage = snmp_get($device, 'es1dc1DataDCBusBusVoltage.0', '-Ovqe', 'SITE-MONITORING-MIB');
 $curOID = '.1.3.6.1.4.1.26854.3.2.1.20.1.20.1.13.3.11.0';
 $index = 0;
-
 if (is_numeric($busVoltage)) {
     $sensorType = 'compas';
     $descr = 'DC Bus Voltage';

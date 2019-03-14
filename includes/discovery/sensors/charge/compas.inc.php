@@ -22,13 +22,11 @@
  * @copyright  2019 Paul Parsons
  * @author     Paul Parsons <paul@cppmonkey.net>
  */
-
 $chargeCapacity = snmp_get($device, 'es1dc1DataBatBatChargeCapacity.0', '-Ovqe', 'SITE-MONITORING-MIB');
 $curOID = '.1.3.6.1.4.1.26854.3.2.1.20.1.20.1.13.3.91.0';
 $index = 0;
-
 if (is_numeric($chargeCapacity)) {
     $sensorType = 'compas';
-    $descr = 'Battery Temperture';
+    $descr = 'Battery Charge';
     discover_sensor($valid['sensor'], 'charge', $device, $curOID, $index, $sensorType, $descr, '1', '1', null, null, null, null, $chargeCapacity);
 }
