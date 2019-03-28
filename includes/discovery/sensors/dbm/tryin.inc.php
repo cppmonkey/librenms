@@ -37,6 +37,16 @@ foreach (range(1, 16) as $card) {
     $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
+        $current = snmp_get($device, 'vGainOrOutputPower.0', '-Ovq', $mib_file);
+
+        if (is_numeric($current)) {
+            $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.21.0', $card, $type);
+            $descr = 'Gain';
+            $index = substr($num_oid, 24);
+            $current /= $divisor;
+            discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
+        }
+
         $current = snmp_get($device, 'vInput.0', '-Ovq', $mib_file);
 
         if (is_numeric($current)) {
@@ -157,6 +167,16 @@ foreach (range(1, 16) as $card) {
         $descr = 'state';
         $index = substr($num_oid, 24);
         $divisor = 10;
+
+        $current = snmp_get($device, 'vGainOrOutputPower.0', '-Ovq', $mib_file);
+
+        if (is_numeric($current)) {
+            $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.21.0', $card, $type);
+            $descr = 'Gain';
+            $index = substr($num_oid, 24);
+            $current /= $divisor;
+            discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, $divisor, $multiplier, null, null, null, null, $current, 'snmp', null, null, null, $group);
+        }
 
         $current = snmp_get($device, 'vInputPower.0', '-Ovq', $mib_file);
 
