@@ -33,7 +33,9 @@ foreach (range(1, 16) as $card) {
     $mib_file = sprintf('OAP-C%d-EDFA', $card);
     $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'vDeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'vSoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'vHardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
@@ -72,14 +74,16 @@ foreach (range(1, 16) as $card) {
     $mib_file = sprintf('OAP-C%d-OEO', $card);
     $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'vDeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'vSoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'vHardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
         // Descover SPF Optics
         $channel_oid = 11;
         foreach (range('A', 'D') as $channel) {
-            $group = sprintf('%s Card %d SFP Channel %s', $deviceType, $card, $channel);
+            $group = sprintf('Card %d %s SFP Channel %s', $card, $deviceType, $channel);
             foreach (range(1, 2) as $optic) {
                 $distance   = snmp_get($device, sprintf('vSFP%s%dModeTransmissionDistance.0', $channel, $optic), '-Ovq', $mib_file);
                 $speed      = snmp_get($device, sprintf('vSFP%s%dModeTransmissionRate.0', $channel, $optic), '-Ovq', $mib_file);
@@ -131,7 +135,9 @@ foreach (range(1, 16) as $card) {
     $mib_file = sprintf('OAP-C%d-OLP', $card); // glsun-OXC or tryin-OLP
     $deviceType = snmp_get($device, 'c1DeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'c1DeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'c1SoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'c1HardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
@@ -145,7 +151,9 @@ foreach (range(1, 16) as $card) {
     $mib_file = sprintf('OAP-C%d-VOA', $card);
     $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'c1DeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'c1SoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'c1HardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
@@ -159,7 +167,9 @@ foreach (range(1, 16) as $card) {
     $mib_file = sprintf('OAP-C%d-DEDFA', $card);
     $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'vDeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'vSoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'vHardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'vCardState.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
@@ -204,7 +214,9 @@ foreach (range(1, 16) as $card) {
     $mib_file = sprintf('OAP-C%d-OSW', $card);
     $deviceType = snmp_get($device, 'c1DeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'c1DeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'c1SoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'c1HardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
@@ -214,11 +226,13 @@ foreach (range(1, 16) as $card) {
         //discover_sensor($valid['sensor'], 'dbm', $device, $num_oid, $index, $dev_type, $descr, '1', '1', null, null, null, null, $current, 'snmp', null, null, null, $group);
     }
 
-    $type = '8';
+    $type = '9';
     $mib_file = sprintf('OAP-C%d-YEDFA', $card);
     $deviceType = snmp_get($device, 'vDeviceType.0', '-Ovqa', $mib_file);
     $deviceDescription = snmp_get($device, 'vDeviceDescription.0', '-Ovqa', $mib_file);
-    $group = sprintf('Card %d %s - %s', $card, $deviceType, $deviceDescription);
+    $deviceSV = snmp_get($device, 'vSoftwareVersion.0', '-Ovqa', $mib_file);
+    $deviceHV = snmp_get($device, 'vHardwareVersion.0', '-Ovqa', $mib_file);
+    $group = sprintf('Card %d %s - %s (%s - %s)', $card, $deviceType, $deviceDescription, $deviceHV, $deviceSV);
     $current = snmp_get($device, 'c1State.0', '-Ovqe', $mib_file);
 
     if (is_numeric($current)) {
