@@ -44,7 +44,7 @@ foreach (range(1, 16) as $card) {
             $low_limit = snmp_get($device, 'vModuleTemperatureLowerLimit.0', '-Ovqe', $mib_file);
             $high_Limit = snmp_get($device, 'vModuleTemperatureUpperLimit.0', '-Ovqe', $mib_file);
 
-            discover_sensor($valid['sensor'], 'temperature', $device, $num_oid, $index, $state_name, $descr, 100, 1, $low_limit, null, null, $high_limit, $current, 'snmp', null, null, null, $group);
+            discover_sensor($valid['sensor'], 'temperature', $device, $num_oid, $index, $state_name, $descr, 100, 1, $low_limit/100, null, null, $high_limit/100, $current/100, 'snmp', null, null, null, $group);
         }
 
         $current = snmp_get($device, 'vPUMPTemperature.0', '-Ovqe', $mib_file);
@@ -57,7 +57,7 @@ foreach (range(1, 16) as $card) {
             $low_limit = snmp_get($device, 'vPUMPTemperatureLowerLimit.0', '-Ovqe', $mib_file);
             $high_Limit = snmp_get($device, 'vPUMPTemperatureUpperLimit.0', '-Ovqe', $mib_file);
 
-            discover_sensor($valid['sensor'], 'temperature', $device, $num_oid, $index, $state_name, $descr, 100, 1, $low_limit, null, null, $high_limit, $current, 'snmp', null, null, null, $group);
+            discover_sensor($valid['sensor'], 'temperature', $device, $num_oid, $index, $state_name, $descr, 100, 1, $low_limit/100, null, null, $high_limit/100, $current/100, 'snmp', null, null, null, $group);
         }
     }
 
@@ -82,12 +82,12 @@ foreach (range(1, 16) as $card) {
                 $group = sprintf('Card %d %s SFP Channel %s', $card, $deviceType, $channel);
                 $current = snmp_get($device, sprintf('vSFP%s%dModeTemperature.0', $channel, $optic), '-Ovqe', $mib_file);
                 $num_oid = sprintf('.1.3.6.1.4.1.40989.10.16.%d.%d.%d.9.0', $card, $type, $channel_oid);
-                $descr = sprintf('SFP %s%d Temperasture', $channel, $optic);
+                $descr = sprintf('SFP %s%d Temperature', $channel, $optic);
                 $index = substr($num_oid, 24);
 
                 if (is_numeric($current)) {
                     $state_name = sprintf('vSFP%s%dModeTemperature.0', $channel, $optic);
-                    discover_sensor($valid['sensor'], 'temperature', $device, $num_oid, $index, $state_name, $descr, 100, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+                    discover_sensor($valid['sensor'], 'temperature', $device, $num_oid, $index, $state_name, $descr, 100, 1, null, null, null, null, $current/100, 'snmp', null, null, null, $group);
                 }
                 $channel_oid++;
             }
@@ -180,7 +180,7 @@ foreach (range(1, 16) as $card) {
 
     if (is_numeric($current)) {
         $state_name = 'vPump1Temp';
-        discover_sensor($valid['sensor'], 'temperture', $device, $num_oid, $index, $state_name, $descr, 100, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'temperture', $device, $num_oid, $index, $state_name, $descr, 100, 1, null, null, null, null, $current/100, 'snmp', null, null, null, $group);
     }
 
     $current = snmp_get($device, 'vPump2Temperature.0', '-Ovqe', $mib_file);
@@ -190,7 +190,7 @@ foreach (range(1, 16) as $card) {
 
     if (is_numeric($current)) {
         $state_name = 'vPump2Temperature';
-        discover_sensor($valid['sensor'], 'temperture', $device, $num_oid, $index, $state_name, $descr, 100, 1, null, null, null, null, $current, 'snmp', null, null, null, $group);
+        discover_sensor($valid['sensor'], 'temperture', $device, $num_oid, $index, $state_name, $descr, 100, 1, null, null, null, null, $current/100, 'snmp', null, null, null, $group);
     }
 
     $type = '8';
