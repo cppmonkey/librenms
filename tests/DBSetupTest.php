@@ -25,10 +25,18 @@
 
 namespace LibreNMS\Tests;
 
-use PHPUnit_Framework_ExpectationFailedException as PHPUnitException;
+use \PHPUnit\Framework\ExpectationFailedException as PHPUnitException;
 
 class DBSetupTest extends DBTestCase
 {
+    protected $db_name;
+
+    public function setUp()
+    {
+        parent::setUp();
+        $this->db_name = dbFetchCell('SELECT DATABASE()');
+    }
+
     public function testSetupDB()
     {
         global $schema;
@@ -37,12 +45,13 @@ class DBSetupTest extends DBTestCase
                 throw new PHPUnitException("Errors loading DB Schema: " . $output);
             }
         }
+
+        $this->expectNotToPerformAssertions();
     }
 
     public function testSchemaFiles()
     {
-        global $config;
-        $files = glob($config['install_dir'].'/sql-schema/*.sql');
+        $files = glob(\LibreNMS\Config::get('install_dir') . '/sql-schema/*.sql');
 
         foreach ($files as $file) {
             $content = file_get_contents($file);
@@ -65,6 +74,8 @@ class DBSetupTest extends DBTestCase
                 }
             }
         }
+
+        $this->expectNotToPerformAssertions();
     }
 
     public function testSchema()

@@ -35,7 +35,7 @@ $config['auth_mechanism'] = "mysql";
 
 - 5: **Global Read**: Read only Administrator. 
 
-- 10: **Administartor**: This is a global read/write admin account.
+- 10: **Administrator**: This is a global read/write admin account.
 
 - 11: **Demo Account**: Provides full read/write with certain restrictions (i.e can't delete devices).
 
@@ -162,6 +162,7 @@ $config['auth_ldap_groupmemberattr'] = 'memberUid'; // attribute to use to see i
 $config['auth_ldap_uid_attribute'] = 'uidnumber';   // attribute for unique id
 $config['auth_ldap_debug'] = false;                 // enable for verbose debug messages
 $config['auth_ldap_userdn'] = true;                 // Uses a users full DN as the value of the member attribute in a group instead of member: username. (it’s member: uid=username,ou=groups,dc=domain,dc=com)
+$config['auth_ldap_userlist_filter'] = 'service=informatique'; // Replace 'service=informatique' by your ldap filter to limit the number of responses if you have an ldap directory with thousand of users
 ```
 
 ### LDAP bind user (optional)
@@ -185,16 +186,24 @@ An example config setup for use with Jumpcloud LDAP as a service is:
 ```php
 $config['auth_mechanism'] = "ldap";
 $config['auth_ldap_version'] = 3;
-$config['auth_ldap_server'] = "ldap.jumpcloud.com";
-$config['auth_ldap_port'] = 389;
+$config['auth_ldap_server'] = "ldap.jumpcloud.com"; #Set to ldaps://ldap.jumpcloud.com to enable LDAPS
+$config['auth_ldap_port'] = 389; #Set to 636 if using LDAPS
 $config['auth_ldap_prefix'] = "uid=";
 $config['auth_ldap_suffix'] = ",ou=Users,o={id},dc=jumpcloud,dc=com";
-$config['auth_ldap_groupbase'] = "cn=librenms,ou=Users,o={id},dc=jumpcloud,dc=com";
-$config['auth_ldap_groupmemberattr'] = "memberUid";
-$config['auth_ldap_groups']['librenms']['level'] = 10;
+$config['auth_ldap_groupbase'] = "ou=Users,o={id},dc=jumpcloud,dc=com";
+$config['auth_ldap_groupmemberattr'] = "member";
+$config['auth_ldap_groups'] = ['{group}' => ['level' => 10],];
+$config['auth_ldap_userdn'] = true;
 ```
+Replace {id} with the unique ID provided by Jumpcloud.  Replace {group} with the unique group name created in Jumpcloud.  This field is case sensitive.
 
-Replace {id} with the unique ID provided by Jumpcloud.
+Note: If you have multiple user groups to define individual access levels replace the `$config['auth_ldap_groups']` line with the following:
+```php
+$config['auth_ldap_groups'] = [
+    '{admin_group}' => ['level' => 10],
+    '{global_readonly_group}' => ['level' => 5],
+];
+```
 
 
 # Radius Authentication

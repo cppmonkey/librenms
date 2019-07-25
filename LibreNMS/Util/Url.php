@@ -29,6 +29,7 @@ use App\Models\Device;
 use App\Models\Port;
 use Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 use LibreNMS\Config;
 
 class Url
@@ -200,14 +201,14 @@ class Url
             $args['bg'] = 'FFFFFF00';
         }
 
-        return "<img src='graph.php?type=" . $args['graph_type'] . '&amp;id=' . $args['port_id'] . '&amp;from=' . $args['from'] . '&amp;to=' . $args['to'] . '&amp;width=' . $args['width'] . '&amp;height=' . $args['height'] . '&amp;bg=' . $args['bg'] . "'>";
+        return '<img src="' . url('graph.php') . '?type=' . $args['graph_type'] . '&amp;id=' . $args['port_id'] . '&amp;from=' . $args['from'] . '&amp;to=' . $args['to'] . '&amp;width=' . $args['width'] . '&amp;height=' . $args['height'] . '&amp;bg=' . $args['bg'] . '">';
     }
 
     public static function generate($vars, $new_vars = [])
     {
         $vars = array_merge($vars, $new_vars);
 
-        $url = $vars['page'] . '/';
+        $url = url($vars['page']) . '/';
         unset($vars['page']);
 
         foreach ($vars as $var => $value) {
@@ -230,7 +231,7 @@ class Url
             $urlargs[] = $key . '=' . urlencode($arg);
         }
 
-        return '<img src="graph.php?' . implode('&amp;', $urlargs) . '" style="border:0;" />';
+        return '<img src="' . url('graph.php') . '?' . implode('&amp;', $urlargs) . '" style="border:0;" />';
     }
 
     public static function lazyGraphTag($args)
@@ -243,15 +244,15 @@ class Url
 
 
         if (Config::get('enable_lazy_load', true)) {
-            return '<img class="lazy img-responsive" data-original="graph.php?' . implode('&amp;', $urlargs) . '" style="border:0;" />';
+            return '<img class="lazy img-responsive" data-original="' . url('graph.php') . '?' . implode('&amp;', $urlargs) . '" style="border:0;" />';
         }
 
-        return '<img class="img-responsive" src="graph.php?' . implode('&amp;', $urlargs) . '" style="border:0;" />';
+        return '<img class="img-responsive" src="' . url('graph.php') . '?' . implode('&amp;', $urlargs) . '" style="border:0;" />';
     }
 
     public static function overlibLink($url, $text, $contents, $class = null)
     {
-        $contents = "<div style=\'background-color: #FFFFFF;\'>" . $contents . '</div>';
+        $contents = "<div class=\'overlib-contents\'>" . $contents . '</div>';
         $contents = str_replace('"', "\'", $contents);
         if ($class === null) {
             $output = '<a href="' . $url . '"';
@@ -305,7 +306,7 @@ class Url
     public static function minigraphImage($device, $start, $end, $type, $legend = 'no', $width = 275, $height = 100, $sep = '&amp;', $class = 'minigraph-image', $absolute_size = 0)
     {
         $vars = ['device=' . $device->device_id, "from=$start", "to=$end", "width=$width", "height=$height", "type=$type", "legend=$legend", "absolute=$absolute_size"];
-        return '<img class="' . $class . '" width="' . $width . '" height="' . $height . '" src="graph.php?' . implode($sep, $vars) . '">';
+        return '<img class="' . $class . '" width="' . $width . '" height="' . $height . '" src="' . url('graph.php') . '?' . implode($sep, $vars) . '">';
     }
 
     private static function getOverviewGraphsForDevice($device)
@@ -362,6 +363,38 @@ class Url
         }
 
         return "interface-upup";
+    }
+
+    /**
+     * @param string $os
+     * @param string $feature
+     * @param string $icon
+     * @param string $dir directory to search in (images/os/ or images/logos)
+     * @return string
+     */
+    public static function findOsImage($os, $feature, $icon = null, $dir = 'images/os/')
+    {
+        $possibilities = [$icon];
+
+        if ($os) {
+            if ($os == "linux") {
+                $distro = Str::before(strtolower(trim($feature)), ' ');
+                $possibilities[] = "$distro.svg";
+                $possibilities[] = "$distro.png";
+            }
+            $os_icon = Config::getOsSetting($os, 'icon', $os);
+            $possibilities[] = "$os_icon.svg";
+            $possibilities[] = "$os_icon.png";
+        }
+
+        foreach ($possibilities as $file) {
+            if (is_file(Config::get('html_dir') . "/$dir" . $file)) {
+                return $file;
+            }
+        }
+
+        // fallback to the generic icon
+        return 'generic.svg';
     }
 
     private static function escapeBothQuotes($string)

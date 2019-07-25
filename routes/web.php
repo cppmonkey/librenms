@@ -22,19 +22,25 @@ Route::group(['middleware' => ['auth', '2fa'], 'guard' => 'auth'], function () {
     });
 
     // pages
+    Route::resource('device-groups', 'DeviceGroupController');
     Route::get('locations', 'LocationController@index');
+    Route::resource('preferences', 'UserPreferencesController', ['only' => ['index', 'store']]);
+    Route::resource('users', 'UserController');
 
     // old route redirects
-    Route::get('poll-log', function () {
-        return redirect('pollers/tab=log/');
-    });
+    Route::permanentRedirect('poll-log', 'pollers/tab=log/');
 
     // Two Factor Auth
-    Route::get('2fa', 'TwoFactorController@showTwoFactorForm')->name('2fa.form');
-    Route::post('2fa', 'TwoFactorController@verifyTwoFactor')->name('2fa.verify');
-    Route::post('2fa/add', 'TwoFactorController@create');
-    Route::post('2fa/cancel', 'TwoFactorController@cancelAdd')->name('2fa.cancel');
-    Route::post('2fa/remove', 'TwoFactorController@destroy');
+    Route::group(['prefix' => '2fa', 'namespace' => 'Auth'], function () {
+        Route::get('', 'TwoFactorController@showTwoFactorForm')->name('2fa.form');
+        Route::post('', 'TwoFactorController@verifyTwoFactor')->name('2fa.verify');
+        Route::post('add', 'TwoFactorController@create')->name('2fa.add');
+        Route::post('cancel', 'TwoFactorController@cancelAdd')->name('2fa.cancel');
+        Route::post('remove', 'TwoFactorController@destroy')->name('2fa.remove');
+
+        Route::post('{user}/unlock', 'TwoFactorManagementController@unlock')->name('2fa.unlock');
+        Route::delete('{user}', 'TwoFactorManagementController@destroy')->name('2fa.delete');
+    });
 
     // Ajax routes
     Route::group(['prefix' => 'ajax'], function () {
@@ -67,6 +73,7 @@ Route::group(['middleware' => ['auth', '2fa'], 'guard' => 'auth'], function () {
             Route::get('syslog', 'SyslogController');
             Route::get('location', 'LocationController');
             Route::get('munin', 'MuninPluginController');
+            Route::get('service', 'ServiceController');
             Route::get('port', 'PortController');
             Route::get('port-field', 'PortFieldController');
         });
@@ -105,29 +112,15 @@ Route::group(['middleware' => ['auth', '2fa'], 'guard' => 'auth'], function () {
         });
     });
 
-    // Debugbar routes need to be here because of catch-all
-    if (config('app.env') !== 'production' && config('app.debug') && config('debugbar.enabled') !== false) {
-        Route::get('/_debugbar/assets/stylesheets', [
-            'as' => 'debugbar-css',
-            'uses' => '\Barryvdh\Debugbar\Controllers\AssetController@css'
-        ]);
-
-        Route::get('/_debugbar/assets/javascript', [
-            'as' => 'debugbar-js',
-            'uses' => '\Barryvdh\Debugbar\Controllers\AssetController@js'
-        ]);
-
-        Route::get('/_debugbar/open', [
-            'as' => 'debugbar-open',
-            'uses' => '\Barryvdh\Debugbar\Controllers\OpenController@handler'
-        ]);
-    }
-
     // demo helper
-    Route::get('demo', function () {
-        return redirect('/');
+    Route::permanentRedirect('demo', '/');
+
+    // blank page, dummy page for external code using Laravel::bootWeb()
+    Route::any('/blank', function () {
+        return '';
     });
 
     // Legacy routes
-    Route::any('/{path?}', 'LegacyController@index')->where('path', '.*');
+    Route::any('/{path?}', 'LegacyController@index')
+        ->where('path', '^((?!_debugbar).)*');
 });

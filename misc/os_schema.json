@@ -366,6 +366,12 @@
                 "type": "string"
             }
         },
+        "bad_iftype": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
         "processor_stacked": {
             "type": "boolean"
         },
@@ -496,7 +502,13 @@
                 "starts",
                 "ends",
                 "contains",
-                "regex"
+                "regex",
+                "not_starts",
+                "not_ends",
+                "not_contains",
+                "not_regex",
+                "in_array",
+                "not_in_array"
             ]
         }
     }

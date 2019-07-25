@@ -56,7 +56,9 @@ class ModuleTestHelper
         'fdb-table' => ['ports', 'vlans', 'fdb-table'],
         'vlans' => ['ports', 'vlans'],
         'vrf' => ['ports', 'vrf'],
+        'mpls' => ['ports', 'vrf', 'mpls'],
         'nac' => ['ports', 'nac'],
+        'cisco-mac-accounting' => ['ports', 'cisco-mac-accounting'],
     ];
 
 
@@ -95,7 +97,7 @@ class ModuleTestHelper
 
         if (is_null(self::$module_tables)) {
             // only load the yaml once, then keep it in memory
-            self::$module_tables = Yaml::parse($install_dir . '/tests/module_tables.yaml');
+            self::$module_tables = Yaml::parse(file_get_contents($install_dir . '/tests/module_tables.yaml'));
         }
     }
 

@@ -218,6 +218,8 @@ function discover_device(&$device, $force_module = false)
 // Discover sensors
 function discover_sensor(&$valid, $class, $device, $oid, $index, $type, $descr, $divisor = 1, $multiplier = 1, $low_limit = null, $low_warn_limit = null, $warn_limit = null, $high_limit = null, $current = null, $poller_type = 'snmp', $entPhysicalIndex = null, $entPhysicalIndex_measured = null, $user_func = null, $group = null)
 {
+    $guess_limits   = Config::get('sensors.guess_limits', true);
+
     $low_limit      = set_null($low_limit);
     $low_warn_limit = set_null($low_warn_limit);
     $warn_limit     = set_null($warn_limit);
@@ -227,7 +229,7 @@ function discover_sensor(&$valid, $class, $device, $oid, $index, $type, $descr, 
         $divisor  = 1;
     }
 
-    d_echo("Discover sensor: $oid, $index, $type, $descr, $poller_type, $divisor, $multiplier, $entPhysicalIndex, $current\n");
+    d_echo("Discover sensor: $oid, $index, $type, $descr, $poller_type, $divisor, $multiplier, $entPhysicalIndex, $current, (limits: LL: $low_limit, LW: $low_warn_limit, W: $warn_limit, H: $high_limit)\n");
 
     if (isset($warn_limit, $low_warn_limit) && $low_warn_limit > $warn_limit) {
         // Fix high/low thresholds (i.e. on negative numbers)
@@ -235,11 +237,11 @@ function discover_sensor(&$valid, $class, $device, $oid, $index, $type, $descr, 
     }
 
     if (dbFetchCell('SELECT COUNT(sensor_id) FROM `sensors` WHERE `poller_type`= ? AND `sensor_class` = ? AND `device_id` = ? AND sensor_type = ? AND `sensor_index` = ?', array($poller_type, $class, $device['device_id'], $type, (string)$index)) == '0') {
-        if (is_null($high_limit)) {
+        if ($guess_limits && is_null($high_limit)) {
             $high_limit = sensor_limit($class, $current);
         }
 
-        if (is_null($low_limit)) {
+        if ($guess_limits && is_null($low_limit)) {
             $low_limit = sensor_low_limit($class, $current);
         }
 
@@ -285,7 +287,7 @@ function discover_sensor(&$valid, $class, $device, $oid, $index, $type, $descr, 
         $sensor_entry = dbFetchRow('SELECT * FROM `sensors` WHERE `sensor_class` = ? AND `device_id` = ? AND `sensor_type` = ? AND `sensor_index` = ?', array($class, $device['device_id'], $type, (string)$index));
 
         if (!isset($high_limit)) {
-            if (!$sensor_entry['sensor_limit']) {
+            if ($guess_limits && !$sensor_entry['sensor_limit']) {
                 // Calculate a reasonable limit
                 $high_limit = sensor_limit($class, $current);
             } else {
@@ -295,7 +297,7 @@ function discover_sensor(&$valid, $class, $device, $oid, $index, $type, $descr, 
         }
 
         if (!isset($low_limit)) {
-            if (!$sensor_entry['sensor_limit_low']) {
+            if ($guess_limits && !$sensor_entry['sensor_limit_low']) {
                 // Calculate a reasonable limit
                 $low_limit = sensor_low_limit($class, $current);
             } else {
@@ -380,29 +382,20 @@ function discover_sensor(&$valid, $class, $device, $oid, $index, $type, $descr, 
 
 function sensor_low_limit($class, $current)
 {
-    $limit = null;
-
+    // matching an empty case executes code until a break is reached
     switch ($class) {
         case 'temperature':
             $limit = $current - 10;
             break;
         case 'voltage':
-                $limit = $current * 0.85;
+            $limit = $current * 0.85;
             break;
         case 'humidity':
             $limit = 30;
             break;
-        case 'count':
-        case 'current':
-            $limit = null;
-            break;
         case 'fanspeed':
             $limit = $current * 0.80;
             break;
-        case 'power':
-            $limit = null;
-            break;
-        case 'power_consumed':
         case 'power_factor':
             $limit = -1;
             break;
@@ -410,34 +403,24 @@ function sensor_low_limit($class, $current)
             $limit = -80;
             break;
         case 'airflow':
-        case 'dbm':
         case 'snr':
         case 'frequency':
         case 'pressure':
         case 'cooling':
             $limit = $current * 0.95;
             break;
-        case 'delay':
-        case 'quality_factor':
-        case 'chromatic_dispersion':
-        case 'ber':
-        case 'eer':
-        case 'waterflow':
+        default:
+            return null;
     }//end switch
 
-    if (is_numeric($limit)) {
-        return round($limit, 11);
-    }
-
-    return $limit;
+    return round($limit, 11);
 }
 
 //end sensor_low_limit()
 
 function sensor_limit($class, $current)
 {
-    $limit = null;
-
+    // matching an empty case executes code until a break is reached
     switch ($class) {
         case 'temperature':
             $limit = $current + 20;
@@ -448,17 +431,11 @@ function sensor_limit($class, $current)
         case 'humidity':
             $limit = 70;
             break;
-        case 'count':
-        case 'current':
-        case 'power':
-            $limit = $current * 1.50;
-            break;
-        case 'power_consumed':
-        case 'power_factor':
-            $limit = 1;
-            break;
         case 'fanspeed':
             $limit = $current * 1.80;
+            break;
+        case 'power_factor':
+            $limit = 1;
             break;
         case 'signal':
             $limit = -30;
@@ -467,20 +444,17 @@ function sensor_limit($class, $current)
             $limit = 80;
             break;
         case 'airflow':
-        case 'dbm':
         case 'snr':
         case 'frequency':
         case 'pressure':
         case 'cooling':
             $limit = $current * 1.05;
             break;
+        default:
+            return null;
     }//end switch
 
-    if (is_numeric($limit)) {
-        return round($limit, 11);
-    }
-
-    return $limit;
+    return round($limit, 11);
 }
 
 //end sensor_limit()
@@ -604,6 +578,12 @@ function discover_storage(&$valid, $device, $index, $type, $mib, $descr, $size, 
     if ($descr && $size > '0') {
         $storage = dbFetchRow('SELECT * FROM `storage` WHERE `storage_index` = ? AND `device_id` = ? AND `storage_mib` = ?', array($index, $device['device_id'], $mib));
         if ($storage === false || !count($storage)) {
+            if (Config::getOsSetting($device['os'], 'storage_perc_warn')) {
+                $perc_warn = Config::getOsSetting($device['os'], 'storage_perc_warn');
+            } else {
+                $perc_warn = Config::get('storage_perc_warn', 60);
+            }
+
             $insert = dbInsert(
                 array(
                     'device_id' => $device['device_id'],
@@ -614,6 +594,7 @@ function discover_storage(&$valid, $device, $index, $type, $mib, $descr, $size, 
                     'storage_units' => $units,
                     'storage_size' => $size,
                     'storage_used' => $used,
+                    'storage_perc_warn' => $perc_warn,
                 ),
                 'storage'
             );
@@ -802,6 +783,7 @@ function discover_entity_physical(&$valid, $device, $entPhysicalIndex, $entPhysi
                 'entPhysicalIsFRU'        => $entPhysicalIsFRU,
                 'entPhysicalAlias'        => $entPhysicalAlias,
                 'entPhysicalAssetID'      => $entPhysicalAssetID,
+                'ifIndex'                 => $ifIndex,
             );
             dbUpdate($update_data, 'entPhysical', '`device_id`=? AND `entPhysicalIndex`=?', array($device['device_id'], $entPhysicalIndex));
         }//end if
@@ -1066,7 +1048,7 @@ function discovery_process(&$valid, $device, $sensor_type, $pre_cache)
                     $descr = YamlDiscovery::replaceValues('descr', $index, null, $data, $pre_cache);
 
                     // process the group
-                    $group = YamlDiscovery::replaceValues('group', $index, null, $data, $pre_cache);
+                    $group = YamlDiscovery::replaceValues('group', $index, null, $data, $pre_cache) ?: null;
 
                     $divisor = $data['divisor'] ?: ($sensor_options['divisor'] ?: 1);
                     $multiplier = $data['multiplier'] ?: ($sensor_options['multiplier'] ?: 1);
@@ -1084,21 +1066,22 @@ function discovery_process(&$valid, $device, $sensor_type, $pre_cache)
                     }
 
                     echo "Cur $value, Low: $low_limit, Low Warn: $low_warn_limit, Warn: $warn_limit, High: $high_limit".PHP_EOL;
-                    $entPhysicalIndex = str_replace('{{ $index }}', $index, $data['entPhysicalIndex']) ?: null;
+                    $entPhysicalIndex = YamlDiscovery::replaceValues('entPhysicalIndex', $index, null, $data, $pre_cache) ?: null;
                     $entPhysicalIndex_measured = isset($data['entPhysicalIndex_measured']) ? $data['entPhysicalIndex_measured'] : null;
 
                     $sensor_name = $device['os'];
-
-                    if (isset($user_function) && function_exists($user_function)) {
-                        $value = $user_function($value);
-                    }
 
                     if ($sensor_type === 'state') {
                         $sensor_name = $data['state_name'] ?: $data['oid'];
                         create_state_index($sensor_name, $data['states']);
                     } else {
-                        // We default to 1 for both divisors / multipler so it should be safe to do the calculation using both.
+                        // We default to 1 for both divisors / multipliers so it should be safe to do the calculation using both.
                         $value = ($value / $divisor) * $multiplier;
+                    }
+
+                    //user_func must be applied after divisor/multiplier
+                    if (isset($user_function) && is_callable($user_function)) {
+                        $value = $user_function($value);
                     }
 
                     $uindex = str_replace('{{ $index }}', $index, isset($data['index']) ? $data['index'] : $index);
@@ -1186,6 +1169,7 @@ function build_bgp_peers($device, $data, $peer2)
         'ARISTA-BGP4V2-MIB::aristaBgp4V2PeerRemoteAs.1.',
         'CISCO-BGP4-MIB::cbgpPeer2RemoteAs.',
         'BGP4-MIB::bgpPeerRemoteAs.',
+        'HUAWEI-BGP-VPN-MIB::hwBgpPeerRemoteAs.',
         '.1.3.6.1.4.1.2636.5.1.1.2.1.1.1.13.',
     );
     $peers = trim(str_replace($remove, '', $data));
@@ -1241,11 +1225,19 @@ function build_cbgp_peers($device, $peer, $af_data, $peer2)
         d_echo("AFISAFI = $k\n");
 
         $afisafi_tmp = explode('.', $k);
-        $safi        = array_pop($afisafi_tmp);
-        $afi         = array_pop($afisafi_tmp);
-        $bgp_ip      = str_replace(".$afi.$safi", '', $k);
-        if ($device['os_group'] === 'arista') {
-            $bgp_ip      = str_replace("$afi.", '', $bgp_ip);
+        if ($device['os_group'] === 'vrp') {
+            array_shift($afisafi_tmp); //remove 1st value, always 0 so far
+            $afi         = array_shift($afisafi_tmp);
+            $safi        = array_shift($afisafi_tmp);
+            array_shift($afisafi_tmp); //type, always ipv4 so far
+            $bgp_ip      = implode('.', $afisafi_tmp);
+        } else {
+            $safi        = array_pop($afisafi_tmp);
+            $afi         = array_pop($afisafi_tmp);
+            $bgp_ip      = str_replace(".$afi.$safi", '', $k);
+            if ($device['os_group'] === 'arista') {
+                $bgp_ip      = str_replace("$afi.", '', $bgp_ip);
+            }
         }
         $bgp_ip      = preg_replace('/:/', ' ', $bgp_ip);
         $bgp_ip      = preg_replace('/(\S+\s+\S+)\s/', '$1:', $bgp_ip);

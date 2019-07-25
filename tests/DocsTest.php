@@ -37,6 +37,7 @@ class DocTest extends TestCase
         'Extensions/Graphite.md',
         'Extensions/InfluxDB.md',
         'Extensions/OpenTSDB.md',
+        'Extensions/Poller-Service.md',
         'Extensions/Port-Description-Parser.md',
         'Extensions/Prometheus.md',
         'Extensions/RRDCached-Security.md',
@@ -44,6 +45,8 @@ class DocTest extends TestCase
         'General/Changelogs/2014.md',
         'General/Changelogs/2015.md',
         'General/Changelogs/2016.md',
+        'General/Changelogs/2017.md',
+        'General/Changelogs/2018.md',
         'General/Contributing.md',
         'General/Credits.md',
         'Installation/Installation-(Debian-Ubuntu).md',
@@ -72,5 +75,7 @@ class DocTest extends TestCase
             ->each(function ($missing_doc) {
                 $this->fail("The doc $missing_doc doesn't exist in mkdocs.yml, please add it to the relevant section");
             });
+
+        $this->expectNotToPerformAssertions();
     }
 }
