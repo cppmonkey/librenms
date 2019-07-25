@@ -13,6 +13,7 @@ use LibreNMS\Util\IP;
 use LibreNMS\Util\IPv4;
 use LibreNMS\Util\IPv6;
 use LibreNMS\Util\Url;
+use LibreNMS\Util\Time;
 
 class Device extends BaseModel
 {
@@ -21,7 +22,10 @@ class Device extends BaseModel
     public $timestamps = false;
     protected $primaryKey = 'device_id';
     protected $fillable = ['hostname', 'ip', 'status', 'status_reason'];
-    protected $casts = ['status' => 'boolean'];
+    protected $casts = [
+        'last_polled' => 'datetime',
+        'status' => 'boolean',
+    ];
 
     /**
      * Initialize this class
@@ -188,20 +192,13 @@ class Device extends BaseModel
 
     public function loadOs($force = false)
     {
-        global $config;
-
         $yaml_file = base_path('/includes/definitions/' . $this->os . '.yaml');
 
-        if ((empty($config['os'][$this->os]['definition_loaded']) || $force) && file_exists($yaml_file)) {
+        if ((!\LibreNMS\Config::getOsSetting($this->os, 'definition_loaded') || $force) && file_exists($yaml_file)) {
             $os = \Symfony\Component\Yaml\Yaml::parse(file_get_contents($yaml_file));
 
-            if (isset($config['os'][$this->os])) {
-                $config['os'][$this->os] = array_replace_recursive($os, $config['os'][$this->os]);
-            } else {
-                $config['os'][$this->os] = $os;
-            }
-
-            $config['os'][$this->os]['definition_loaded'] = true;
+            \LibreNMS\Config::set("os.$this->os", array_replace_recursive($os, \LibreNMS\Config::get("os.$this->os", [])));
+            \LibreNMS\Config::set("os.$this->os.definition_loaded", true);
         }
     }
 
@@ -253,34 +250,7 @@ class Device extends BaseModel
 
     public function formatUptime($short = false)
     {
-        $result = '';
-        $interval = $this->uptime;
-        $data = [
-            'years' => 31536000,
-            'days' => 86400,
-            'hours' => 3600,
-            'minutes' => 60,
-            'seconds' => 1,
-        ];
-
-        foreach ($data as $k => $v) {
-            if ($interval >= $v) {
-                $diff = floor($interval / $v);
-
-                $result .= " $diff";
-                if ($short) {
-                    $result .= substr($k, 0, 1);
-                } elseif ($diff > 1) {
-                    $result .= $k;
-                } else {
-                    $result .= substr($k, 0, -1);
-                }
-
-                $interval -= $v * $diff;
-            }
-        }
-
-        return $result;
+        return Time::formatInterval($this->uptime, $short);
     }
 
     /**
@@ -362,27 +332,6 @@ class Device extends BaseModel
         }
 
         $this->save();
-    }
-
-    /**
-     * @return string
-     */
-    public function statusName()
-    {
-        if ($this->disabled == 1) {
-            return 'disabled';
-        } elseif ($this->ignore == 1) {
-            return 'ignore';
-        } elseif ($this->status == 0) {
-            return 'down';
-        } else {
-            $warning_time = \LibreNMS\Config::get('uptime_warning', 84600);
-            if ($this->uptime < $warning_time && $this->uptime != 0) {
-                return 'warn';
-            }
-
-            return 'up';
-        }
     }
 
     // ---- Accessors/Mutators ----
@@ -557,6 +506,11 @@ class Device extends BaseModel
         return $this->hasMany('App\Models\Port', 'device_id', 'device_id');
     }
 
+    public function portsFdb()
+    {
+        return $this->hasMany('App\Models\PortsFdb', 'device_id', 'device_id');
+    }
+
     public function portsNac()
     {
         return $this->hasMany('App\Models\PortsNac', 'device_id', 'device_id');
@@ -590,6 +544,16 @@ class Device extends BaseModel
     public function mempools()
     {
         return $this->hasMany('App\Models\Mempool', 'device_id');
+    }
+
+    public function mplsLsps()
+    {
+        return $this->hasMany('App\Models\MplsLsp', 'device_id');
+    }
+
+    public function mplsLspPaths()
+    {
+        return $this->hasMany('App\Models\MplsLspPath', 'device_id');
     }
 
     public function syslogs()

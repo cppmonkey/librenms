@@ -84,9 +84,6 @@ class Config
         $macros = json_decode(file_get_contents($install_dir . '/misc/macros.json'), true);
         self::set('alert.macros.rule', $macros);
 
-        // variable definitions (remove me)
-        require $install_dir . '/includes/vmware_guestid.inc.php';
-
         // Load user config
         @include $install_dir . '/config.php';
 
@@ -340,6 +337,16 @@ class Config
     }
 
     /**
+     * Get the full configuration array
+     * @return array
+     */
+    public static function getAll()
+    {
+        global $config;
+        return $config;
+    }
+
+    /**
      * merge the database config with the global config
      * Global config overrides db
      */
@@ -440,10 +447,6 @@ class Config
     {
         if (!self::get('email_from')) {
             self::set('email_from', '"' . self::get('project_name') . '" <' . self::get('email_user') . '@' . php_uname('n') . '>');
-        }
-
-        if (self::get('secure_cookies')) {
-            ini_set('session.cookie_secure', 1);
         }
 
         // If we're on SSL, let's properly detect it

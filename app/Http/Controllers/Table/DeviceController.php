@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Builder;
 use LibreNMS\Config;
 use LibreNMS\Util\Rewrite;
 use LibreNMS\Util\Url;
+use LibreNMS\Util\Time;
 
 class DeviceController extends TableController
 {
@@ -119,16 +120,32 @@ class DeviceController extends TableController
     {
         return [
             'extra' => $this->getLabel($device),
-            'status' => $device->statusName(),
-            'icon' => '<img src="' . $device->icon . '" title="' . pathinfo($device->icon, PATHINFO_FILENAME) . '">',
+            'status' => $this->getStatus($device),
+            'icon' => '<img src="' . asset($device->icon) . '" title="' . pathinfo($device->icon, PATHINFO_FILENAME) . '">',
             'hostname' => $this->getHostname($device),
             'metrics' => $this->getMetrics($device),
             'hardware' => Rewrite::ciscoHardware($device),
             'os' => $this->getOsText($device),
-            'uptime' => $device->formatUptime(true),
+            'uptime' => (!$device->status && !$device->last_polled) ? __('Never polled') : Time::formatInterval($device->status ? $device->uptime : $device->last_polled->diffInSeconds(), 'short'),
             'location' => $this->getLocation($device),
             'actions' => $this->getActions($device),
         ];
+    }
+
+    /**
+     * Get the device up/down status
+     * @param Device $device
+     * @return string
+     */
+    private function getStatus($device)
+    {
+        if ($device->disabled == 1) {
+            return 'disabled';
+        } elseif ($device->status == 0) {
+            return 'down';
+        }
+
+        return 'up';
     }
 
     /**
@@ -138,15 +155,20 @@ class DeviceController extends TableController
      */
     private function getLabel($device)
     {
-        if ($device->disabled) {
+        if ($device->disabled == 1) {
+            return 'blackbg';
+        } elseif ($device->ignore == 1) {
             return 'label-default';
-        }
+        } elseif ($device->status == 0) {
+            return 'label-danger';
+        } else {
+            $warning_time = \LibreNMS\Config::get('uptime_warning', 84600);
+            if ($device->uptime < $warning_time && $device->uptime != 0) {
+                return 'label-warning';
+            }
 
-        if ($device->ignore) {
-            return $device->status ? 'label-warning' : 'label-default';
+            return 'label-success';
         }
-
-        return $device->status ? 'label-success' : 'label-danger';
     }
 
     /**
@@ -211,6 +233,8 @@ class DeviceController extends TableController
     /**
      * @param $device
      * @param $count
+     * @param $tab
+     * @param $icon
      * @return string
      */
     private function formatMetric($device, $count, $tab, $icon)
