@@ -215,8 +215,8 @@ Extend` heading top of page.
 1: Create stats file with appropriate permissions:
 
 ```shell
-~$ touch /var/run/named/stats
-~$ chown bind:bind /var/run/named/stats
+~$ touch /var/cache/bind/named.stats
+~$ chown bind:bind /var/cache/bind/named.stats
 ```
 
 Change `user:group` to the user and group that's running bind/named.
@@ -226,7 +226,7 @@ Change `user:group` to the user and group that's running bind/named.
 ```text
 options {
     ...
-    statistics-file "/var/run/named/stats";
+    statistics-file "/var/cache/bind/named.stats";
     zone-statistics yes;
     ...
 };
@@ -235,7 +235,7 @@ options {
 3: Restart your bind9/named after changing the configuration.
 
 4: Verify that everything works by executing `rndc stats && cat
-/var/run/named/stats`. In case you get a `Permission Denied` error,
+/var/cache/bind/named.stats`. In case you get a `Permission Denied` error,
 make sure you changed the ownership correctly.
 
 5: Also be aware that this file is appended to each time `rndc stats`
@@ -272,7 +272,7 @@ own settings.
 rndc = The path to rndc. Default: /usr/bin/env rndc
 call_rndc = A 0/1 boolean on whether or not to call rndc stats.
     Suggest to set to 0 if using netdata. Default: 1
-stats_file = The path to the named stats file. Default: /var/run/named/stats
+stats_file = The path to the named stats file. Default: /var/cache/bind/named.stats
 agent = A 0/1 boolean for if this is being used as a LibreNMS
     agent or not. Default: 0
 zero_stats = A 0/1 boolean for if the stats file should be zeroed
