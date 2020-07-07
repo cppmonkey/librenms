@@ -1,5 +1,9 @@
 @extends('layouts.librenmsv1')
 
+@section('javascript')
+    <script src="{{ asset('js/jquery.qrcode.min.js') }}"></script>
+@endsection
+
 @section('content')
 <div class="container">
 <div class="row">
@@ -62,7 +66,7 @@
                                 <div class="form-group">
                                     @if(!$errors->has('lockout'))
                                         <div class="col-md-12" style="margin:8px">
-                                            <button type="submit" class="btn btn-primary btn-block" name="submit" type="submit">
+                                            <button type="submit" class="btn btn-primary btn-block" name="submit">
                                                 <i class="fa fa-btn fa-sign-in"></i> @lang('Submit')
                                             </button>
                                         </div>

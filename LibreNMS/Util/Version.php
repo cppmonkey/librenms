@@ -26,11 +26,12 @@
 namespace LibreNMS\Util;
 
 use LibreNMS\DB\Eloquent;
+use Symfony\Component\Process\Process;
 
 class Version
 {
     // Update this on release
-    const VERSION = '1.53';
+    const VERSION = '1.65';
 
     protected $is_git_install = false;
 
@@ -73,5 +74,31 @@ class Version
     private function fromGit()
     {
         return rtrim(shell_exec('git describe --tags 2>/dev/null'));
+    }
+
+    public function gitChangelog()
+    {
+        return $this->is_git_install
+            ? rtrim(shell_exec('git log -10'))
+            : '';
+    }
+
+    public function gitDate()
+    {
+        return $this->is_git_install
+            ? rtrim(shell_exec("git show --pretty='%ct' -s HEAD"))
+            : '';
+    }
+
+    public static function python()
+    {
+        $proc = new Process(['python3', '--version']);
+        $proc->run();
+
+        if ($proc->getExitCode() !== 0) {
+            return null;
+        }
+
+        return explode(' ', rtrim($proc->getOutput()), 2)[1] ?? null;
     }
 }

@@ -23,6 +23,7 @@
  */
 namespace LibreNMS\Alert\Transport;
 
+use LibreNMS\Enum\AlertState;
 use LibreNMS\Alert\Transport;
 
 class Rocket extends Transport
@@ -40,7 +41,7 @@ class Rocket extends Transport
         $host          = $api['url'];
         $curl          = curl_init();
         $rocket_msg    = strip_tags($obj['msg']);
-        $color         = ($obj['state'] == 0 ? '#00FF00' : '#FF0000');
+        $color         = self::getColorForState($obj['state']);
         $data          = array(
             'attachments' => array(
                 0 => array(

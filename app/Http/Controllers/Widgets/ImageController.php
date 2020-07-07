@@ -26,6 +26,7 @@
 namespace App\Http\Controllers\Widgets;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ImageController extends WidgetController
 {
@@ -51,7 +52,7 @@ class ImageController extends WidgetController
         $data['image_url'] = str_replace(['@AUTO_HEIGHT@', '@AUTO_WIDTH@'], [$dimensions['y'], $dimensions['x']], $data['image_url']);
 
         // bust cache
-        if (str_contains($data['image_url'], '?')) {
+        if (Str::contains($data['image_url'], '?')) {
             $data['image_url'] .= '&' . mt_rand();
         } else {
             $data['image_url'] .= '?' . mt_rand();
@@ -62,10 +63,10 @@ class ImageController extends WidgetController
 
     public function getSettingsView(Request $request)
     {
-        return view('widgets.settings.image', $this->getSettings());
+        return view('widgets.settings.image', $this->getSettings(true));
     }
 
-    public function getSettings()
+    public function getSettings($settingsView = false)
     {
         if (is_null($this->settings)) {
             parent::getSettings();

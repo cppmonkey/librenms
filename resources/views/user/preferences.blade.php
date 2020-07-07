@@ -1,6 +1,6 @@
 @extends('layouts.librenmsv1')
 
-@section('title', __('Preferences'))
+@section('title', __('preferences.title'))
 
 @section('content')
 <div class="container">
@@ -54,7 +54,7 @@
     @endif
 
     <div class="panel panel-default panel-condensed">
-        <div class="panel-heading">@lang('Preferences')</div>
+        <div class="panel-heading">@lang('preferences.title')</div>
         <div class="panel-body">
             <form class="form-horizontal" role="form">
                 @csrf
@@ -69,9 +69,21 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label for="site_style" class="col-sm-4 control-label">@lang('CSS Style')</label>
+                    <div class="col-sm-4">
+                        <select class="form-control ajax-select" name="site_style" data-pref="site_style" data-previous="{{ $site_style }}">
+                            <option value="default">@lang('Default') ({{ $site_style_default }})</option>
+                            @foreach($site_styles as $style => $descr)
+                                <option value="{{ $style }}" @if($style == $site_style) selected @endif>{{ $descr }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="locale" class="col-sm-4 control-label">@lang('Language')</label>
                     <div class="col-sm-4">
                         <select class="form-control ajax-select" name="locale" data-pref="locale" data-previous="{{ $locale }}">
+                            <option value="default">@lang('Default') ({{ $locale_default }})</option>
                             @foreach($locales as $lang => $descr)
                                 <option value="{{ $lang }}" @if($lang == $locale) selected @endif>{{ $descr }}</option>
                             @endforeach
@@ -158,7 +170,7 @@
                 <strong class="green">@lang('Global Viewing Access')</strong>
             @else
                 @forelse($devices as $device)
-                    {!! \LibreNMS\Util\Url::deviceLink($device) !!} <br />
+                    @deviceLink($device) <br />
                 @empty
                     <strong class="red">@lang('No access!')</strong>
                 @endforelse
@@ -170,7 +182,7 @@
 
 @section('javascript')
     <script src="{{ asset('js/jquery.qrcode.min.js') }}"></script>
-    @endsection
+@endsection
 
 @section('scripts')
     <script>
@@ -216,6 +228,9 @@
                 },
                 success: function () {
                     if (pref === 'locale') {
+                        location.reload();
+                    }
+                    if (pref === 'site_style') {
                         location.reload();
                     }
 

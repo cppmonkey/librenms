@@ -22,6 +22,7 @@ namespace LibreNMS;
 
 use LibreNMS\DB\Eloquent;
 use LibreNMS\Authentication\LegacyAuth;
+use LibreNMS\Enum\AlertState;
 
 class IRCBot
 {
@@ -237,10 +238,10 @@ class IRCBot
             }
 
             switch ($alert['state']) :
-                case 3:
+                case AlertState::WORSE:
                     $severity_extended = '+';
                     break;
-                case 4:
+                case AlertState::BETTER:
                     $severity_extended = '-';
                     break;
                 default:
@@ -248,7 +249,7 @@ class IRCBot
             endswitch;
 
             $severity = str_replace(array('warning', 'critical'), array($this->_color('Warning', 'yellow'), $this->_color('Critical', 'red')), $alert['severity']).$severity_extended.' ';
-            if ($alert['state'] == 0 and $this->config['irc_alert_utf8']) {
+            if ($alert['state'] == AlertState::RECOVERED and $this->config['irc_alert_utf8']) {
                 $severity = str_replace(array('Warning', 'Critical'), array('̶W̶a̶r̶n̶i̶n̶g', '̶C̶r̶i̶t̶i̶c̶a̶l'), $severity);
             }
 
@@ -545,13 +546,8 @@ class IRCBot
                     $this->user['level'] = LegacyAuth::get()->getUserlevel($user['username']);
                     $this->user['expire'] = (time() + ($this->config['irc_authtime'] * 3600));
                     if ($this->user['level'] < 5) {
-                        foreach (dbFetchRows('SELECT device_id FROM devices_perms WHERE user_id = ?', array($this->user['id'])) as $tmp) {
-                            $this->user['devices'][] = $tmp['device_id'];
-                        }
-
-                        foreach (dbFetchRows('SELECT port_id FROM ports_perms WHERE user_id = ?', array($this->user['id'])) as $tmp) {
-                            $this->user['ports'][] = $tmp['port_id'];
-                        }
+                        $this->user['devices'] = Permissions::devicesForUser($this->user['id'])->toArray();
+                        $this->user['ports'] = Permissions::portsForUser($this->user['id'])->toArray();
                     }
                     if ($this->debug) {
                         $this->log("HostAuth on irc for '".$user['username']."', ID: '".$user_id."', Host: '".$host);
@@ -581,13 +577,8 @@ class IRCBot
                 $tmp = LegacyAuth::get()->getUserlevel($tmp_user['username']);
                 $this->user['level'] = $tmp;
                 if ($this->user['level'] < 5) {
-                    foreach (dbFetchRows('SELECT device_id FROM devices_perms WHERE user_id = ?', array($this->user['id'])) as $tmp) {
-                        $this->user['devices'][] = $tmp['device_id'];
-                    }
-
-                    foreach (dbFetchRows('SELECT port_id FROM ports_perms WHERE user_id = ?', array($this->user['id'])) as $tmp) {
-                        $this->user['ports'][] = $tmp['port_id'];
-                    }
+                        $this->user['devices'] = Permissions::devicesForUser($this->user['id'])->toArray();
+                        $this->user['ports'] = Permissions::portsForUser($this->user['id'])->toArray();
                 }
 
                 return $this->respond('Authenticated.');
@@ -622,7 +613,7 @@ class IRCBot
     private function _reload()
     {
         if ($this->user['level'] == 10) {
-            $new_config = Config::load();
+            $new_config = Config::reload();
             $this->respond('Reloading configuration & defaults');
             if ($new_config != $this->config) {
                 return $this->__construct();
@@ -669,9 +660,9 @@ class IRCBot
     {
         $versions       = version_info();
         $schema_version = $versions['db_schema'];
-        $version        = substr($versions['local_sha'], 0, 7);
+        $version        = $versions['local_ver'];
 
-        $msg = $this->config['project_name_version'].', Version: '.$version.', DB schema: '.$schema_version.', PHP: '.PHP_VERSION;
+        $msg = $this->config['project_name'].', Version: '.$version.', DB schema: '.$schema_version.', PHP: '.PHP_VERSION;
         return $this->respond($msg);
     }//end _version()
 

@@ -1,18 +1,17 @@
 <?php
 
 use LibreNMS\Config;
-use LibreNMS\Authentication\LegacyAuth;
 
 $sql = ' FROM `devices` AS D ';
 
-if (!LegacyAuth::user()->hasGlobalAdmin()) {
+if (!Auth::user()->hasGlobalAdmin()) {
     $sql .= ", devices_perms AS P ";
 }
 
 $sql .= " LEFT JOIN `poller_groups` ON `D`.`poller_group`=`poller_groups`.`id`";
 
-if (!LegacyAuth::user()->hasGlobalAdmin()) {
-    $sql .= " WHERE D.device_id = P.device_id AND P.user_id = '".LegacyAuth::id()."' AND D.ignore = '0'";
+if (!Auth::user()->hasGlobalAdmin()) {
+    $sql .= " WHERE D.device_id = P.device_id AND P.user_id = '".Auth::id()."' AND D.ignore = '0'";
 } else {
     $sql .= ' WHERE 1';
 }
@@ -57,10 +56,10 @@ foreach (dbFetchRows($sql, array()) as $device) {
         $device['group_name'] = 'General';
     }
     $response[] = array(
-        'hostname'              => "<a class='list-device' href='".generate_device_url($device, array('tab' => 'graphs', 'group' => 'poller'))."'>".format_hostname($device).'</a>',
+        'hostname'              => generate_device_link($device, format_hostname($device), array('tab' => 'graphs', 'group' => 'poller')),
         'last_polled'           => $device['last_polled'],
         'poller_group'          => $device['group_name'],
-        'last_polled_timetaken' => $device['last_polled_timetaken'],
+        'last_polled_timetaken' => round($device['last_polled_timetaken'], 2),
     );
 }
 

@@ -26,17 +26,16 @@
  * @author     Heath Barnhart <hbarnhart@kanren.net>
  */
 
-namespace LibreNMS\Tests;
+namespace LibreNMS\Tests\Feature\SnmpTraps;
 
 use App\Models\Device;
 use App\Models\Port;
 use LibreNMS\Snmptrap\Dispatcher;
 use LibreNMS\Snmptrap\Trap;
-use Log;
+use LibreNMS\Tests\Feature\SnmpTraps\SnmpTrapTestCase;
 
-class JnxVpnPwTest extends LaravelTestCase
+class JnxVpnPwTest extends SnmpTrapTestCase
 {
-
     public function testVpnPwDown()
     {
         $device = factory(Device::class)->create();

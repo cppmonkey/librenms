@@ -2,12 +2,13 @@
 
 use App\Models\Device;
 use App\Models\Location;
-use LibreNMS\Authentication\LegacyAuth;
+
+require_once 'includes/html/modal/device_maintenance.inc.php';
 
 $device_model = Device::find($device['device_id']);
 
 if ($_POST['editing']) {
-    if (LegacyAuth::user()->hasGlobalAdmin()) {
+    if (Auth::user()->hasGlobalAdmin()) {
         if (isset($_POST['parent_id'])) {
             $parents = array_diff((array)$_POST['parent_id'], ['0']);
             // TODO avoid loops!
@@ -31,9 +32,12 @@ if ($_POST['editing']) {
 
         $device_model->override_sysLocation = $override_sysLocation;
         $device_model->purpose = $_POST['descr'];
+        $device_model->poller_group = $_POST['poller_group'];
         $device_model->ignore = (int)isset($_POST['ignore']);
         $device_model->disabled = (int)isset($_POST['disabled']);
+        $device_model->disable_notify = (int)isset($_POST['disable_notify']);
         $device_model->type = $_POST['type'];
+        $device_model->overwrite_ip = $_POST['overwrite_ip'];
 
         if ($device_model->isDirty('type')) {
             set_dev_attrib($device, 'override_device_type', true);
@@ -48,7 +52,7 @@ if ($_POST['editing']) {
         }
 
         if (isset($_POST['hostname']) && $_POST['hostname'] !== '' && $_POST['hostname'] !== $device['hostname']) {
-            if (LegacyAuth::user()->hasGlobalAdmin()) {
+            if (Auth::user()->hasGlobalAdmin()) {
                 $result = renamehost($device['device_id'], $_POST['hostname'], 'webui');
                 if ($result == "") {
                     Toastr::success("Hostname updated from {$device['hostname']} to {$_POST['hostname']}");
@@ -65,12 +69,32 @@ if ($_POST['editing']) {
                 Toastr::error('Only administrative users may update the device hostname');
             }
         }
+
+        $override_sysContact_bool = mres($_POST['override_sysContact']);
+        if (isset($_POST['sysContact'])) {
+            $override_sysContact_string = mres($_POST['sysContact']);
+        }
+
+        if ($override_sysContact_bool) {
+            set_dev_attrib($device, 'override_sysContact_bool', '1');
+        } else {
+            set_dev_attrib($device, 'override_sysContact_bool', '0');
+        }
+
+        if (isset($override_sysContact_string)) {
+            set_dev_attrib($device, 'override_sysContact_string', $override_sysContact_string);
+        }
     } else {
         include 'includes/html/error-no-perm.inc.php';
     }
 }
 
+$override_sysContact_bool   = get_dev_attrib($device, 'override_sysContact_bool');
+$override_sysContact_string = get_dev_attrib($device, 'override_sysContact_string');
+$disable_notify             = get_dev_attrib($device, 'disable_notify');
+
 ?>
+
 <h3> Device Settings </h3>
 <div class="row">
     <div class="col-md-1 col-md-offset-2">
@@ -83,9 +107,9 @@ if ($_POST['editing']) {
     <div class="col-md-1 col-md-offset-2">
         <?php
         if (\LibreNMS\Config::get('enable_clear_discovery') == 1 && !$device['snmp_disable']) {
-        ?>
+            ?>
             <button type="submit" id="rediscover" data-device_id="<?php echo($device['device_id']); ?>" class="btn btn-primary" name="rediscover"><i class="fa fa-retweet"></i> Rediscover device</button>
-        <?php
+            <?php
         }
         ?>
     </div>
@@ -101,6 +125,12 @@ if ($_POST['editing']) {
         </div>
         <div class="col-sm-2">
             <button name="hostname-edit-button" id="hostname-edit-button" class="btn btn-danger"> <i class="fa fa-pencil"></i> </button>
+        </div>
+    </div>
+    <div class="form-group" data-toggle="tooltip" data-container="body" data-placement="bottom" title="Use this IP instead of resolved one for polling" >
+        <label for="edit-overwrite_ip-input" class="col-sm-2 control-label" >Overwrite IP:</label>
+        <div class="col-sm-6">
+            <input type="text" id="edit-overwrite_up-input" name="overwrite_ip" class="form-control" value=<?php echo($device_model->overwrite_ip); ?>>
         </div>
     </div>
      <div class="form-group">
@@ -134,7 +164,7 @@ if ($_POST['editing']) {
     <div class="form-group">
         <label for="sysLocation" class="col-sm-2 control-label">Override sysLocation:</label>
         <div class="col-sm-6">
-          <input onclick="edit.sysLocation.disabled=!edit.override_sysLocation.checked; edit.sysLocation.select()" type="checkbox" name="override_sysLocation"
+          <input onChange="edit.sysLocation.disabled=!edit.override_sysLocation.checked; edit.sysLocation.select()" type="checkbox" name="override_sysLocation" data-size="small"
                 <?php
                 if ($device_model->override_sysLocation) {
                     echo(' checked="1"');
@@ -150,8 +180,33 @@ if ($_POST['editing']) {
                 if (!$device_model->override_sysLocation) {
                     echo(' disabled="1"');
                 }
-                ?> value="<?php echo display($device_model->location->location); ?>" />
+                ?> value="<?php echo display($device_model->location); ?>" />
         </div>
+    </div>
+    <div class="form-group">
+      <label for="override_sysContact" class="col-sm-2 control-label">Override sysContact</label>
+      <div class="col-sm-6">
+        <input onChange="edit.sysContact.disabled=!edit.override_sysContact.checked" type="checkbox" id="override_sysContact" name="override_sysContact" data-size="small"
+    <?php
+    if ($override_sysContact_bool) {
+        echo ' checked="1"';
+    };
+    ?>
+   />
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-sm-2">
+      </div>
+      <div class="col-sm-6">
+        <input id="sysContact" class="form-control" name="sysContact" size="32"
+    <?php
+    if (!$override_sysContact_bool) {
+        echo ' disabled="1"';
+    };
+    ?>
+    value="<?php echo $override_sysContact_string; ?>" />
+      </div>
     </div>
     <div class="form-group">
         <label for="parent_id" class="col-sm-2 control-label">This device depends on:</label>
@@ -180,10 +235,32 @@ if ($_POST['editing']) {
             </select>
         </div>
     </div>
+<?php
+if (\LibreNMS\Config::get('distributed_poller') === true) {
+    ?>
+   <div class="form-group">
+       <label for="poller_group" class="col-sm-2 control-label">Poller Group</label>
+       <div class="col-sm-6">
+           <select name="poller_group" id="poller_group" class="form-control input-sm">
+           <option value="0">General<?=\LibreNMS\Config::get('distributed_poller_group') == 0 ? ' (default Poller)': ''?></option>
+    <?php
+    foreach (dbFetchRows('SELECT `id`,`group_name` FROM `poller_groups` ORDER BY `group_name`') as $group) {
+        echo ('<option value="'.$group['id'].'"'.
+        ($device_model->poller_group == $group['id'] ? " selected": "").'>'.$group['group_name']);
+        echo (\LibreNMS\Config::get('distributed_poller_group') == $group['id'] ? ' (default Poller)': '');
+        echo ('</option>');
+    }
+    ?>
+           </select>
+       </div>
+   </div>
+    <?php
+}//endif
+?>
     <div class="form-group">
-        <label for="disabled" class="col-sm-2 control-label">Disable:</label>
+        <label for="disabled" class="col-sm-2 control-label">Disable polling and alerting:</label>
         <div class="col-sm-6">
-          <input name="disabled" type="checkbox" id="disabled" value="1"
+          <input name="disabled" type="checkbox" id="disabled" value="1" data-size="small"
                 <?php
                 if ($device_model->disabled) {
                     echo("checked=checked");
@@ -192,9 +269,29 @@ if ($_POST['editing']) {
         </div>
     </div>
     <div class="form-group">
-        <label for="ignore" class="col-sm-2 control-label">Ignore</label>
+      <label for="maintenance" class="col-sm-2 control-label"></label>
+      <div class="col-sm-6">
+      <button type="button" id="maintenance" data-device_id="<?php echo($device['device_id']); ?>" <?php echo(\LibreNMS\Alert\AlertUtil::isMaintenance($device['device_id']) ? 'disabled class="btn btn-warning"' : 'class="btn btn-success"')?> name="maintenance"><i class="fa fa-wrench"></i> Maintenance Mode</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="disable_notify" class="col-sm-2 control-label">Disable alerting:</label>
+      <div class="col-sm-6">
+        <input id="disable_notify" type="checkbox" name="disable_notify" data-size="small"
+                <?php
+                if ($device_model->disable_notify) {
+                    echo("checked=checked");
+                }
+                ?> />
+      </div>
+    </div>
+    <div class="form-group">
+        <label for="ignore" class="col-sm-2 control-label" title="Tag device to ignore alerts. Alert checks will still run.
+However, ignore tag can be read in alert rules.
+If `devices.ignore = 0` or `macros.device = 1` condition is is set and ignore alert tag is on, the alert rule won't match.">Ignore alert tag:</label>
         <div class="col-sm-6">
-           <input name="ignore" type="checkbox" id="ignore" value="1"
+           <input name="ignore" type="checkbox" id="ignore" value="1" data-size="small"
                 <?php
                 if ($device_model->ignore) {
                     echo("checked=checked");
@@ -210,6 +307,11 @@ if ($_POST['editing']) {
 </form>
 <br />
 <script>
+    $('[type="checkbox"]').bootstrapSwitch('offColor', 'danger');
+
+    $("#maintenance").click(function() {
+        $("#device_maintenance_modal").modal('show');
+    });
     $("#rediscover").click(function() {
         var device_id = $(this).data("device_id");
         $.ajax({
@@ -252,5 +354,9 @@ if ($_POST['editing']) {
 print_optionbar_start();
 list($sizeondisk, $numrrds) = foldersize(get_rrd_dir($device['hostname']));
 echo("Size on Disk: <b>" . formatStorage($sizeondisk) . "</b> in <b>" . $numrrds . " RRD files</b>.");
+echo(" | Last polled: <b>" . $device['last_polled'] . "</b>");
+if ($device['last_discovered']) {
+    echo(" | Last discovered: <b>" . $device['last_discovered'] . "</b>");
+}
 print_optionbar_end();
 ?>

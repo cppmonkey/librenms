@@ -26,6 +26,7 @@
 namespace LibreNMS\Util;
 
 use App\Models\Device;
+use LibreNMS\Config;
 
 class Rewrite
 {
@@ -193,8 +194,50 @@ class Rewrite
             }
         }
 
+        if ($device['os'] == "iosxe") {
+            if ($device['hardware']) {
+                if (preg_match('/CAT9K/', $device['sysDescr'], $matches) && preg_match("/^C(9[A-Za-z0-9]+)/", $device['hardware'], $matches2)) {
+                    if (!$short) {
+                        $device['hardware'] = "Catalyst " . $matches2[1] . " (" . $device['hardware'] . ")";
+                    } else {
+                        $device['hardware'] = "Catalyst " . $matches2[1];
+                    }
+                }
+            }
+        }
+
         return $device['hardware'];
     }
+
+    public static function location($location)
+    {
+        $location = str_replace(["\n", '"'], '', $location);
+
+        if (is_array(Config::get('location_map_regex'))) {
+            foreach (Config::get('location_map_regex') as $reg => $val) {
+                if (preg_match($reg, $location)) {
+                    $location = $val;
+                    break;
+                }
+            }
+        }
+
+        if (is_array(Config::get('location_map_regex_sub'))) {
+            foreach (Config::get('location_map_regex_sub') as $reg => $val) {
+                if (preg_match($reg, $location)) {
+                    $location = preg_replace($reg, $val, $location);
+                    break;
+                }
+            }
+        }
+
+        if (Config::has("location_map.$location")) {
+            $location = Config::get("location_map.$location");
+        }
+
+        return $location;
+    }
+
 
     public static function vmwareGuest($guest_id)
     {
@@ -363,5 +406,10 @@ class Rewrite
         ];
 
         return $guests[$guest_id] ?? $guest_id;
+    }
+
+    public static function zeropad($num, $length = 2)
+    {
+        return str_pad($num, $length, '0', STR_PAD_LEFT);
     }
 }

@@ -15,12 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-use LibreNMS\Authentication\LegacyAuth;
-
 $init_modules = array('web', 'auth');
 require realpath(__DIR__ . '/..') . '/includes/init.php';
 
-if (!LegacyAuth::check()) {
+if (!Auth::check()) {
     die('Unauthorized');
 }
 
@@ -56,7 +54,7 @@ function levsortos($base, $obj, $keys)
 
 header('Content-type: application/json');
 if (isset($_GET['term'])) {
-    load_all_os();
+    \LibreNMS\Util\OS::loadAllDefinitions(false, true);
     $_GET['term'] = clean($_GET['term']);
     $sortos = levsortos($_GET['term'], \LibreNMS\Config::get('os'), ["text", "os"]);
     $sortos = array_slice($sortos, 0, 20);

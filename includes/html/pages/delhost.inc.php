@@ -1,15 +1,13 @@
 <?php
 
-use LibreNMS\Authentication\LegacyAuth;
-
-if (!LegacyAuth::user()->hasGlobalAdmin()) {
+if (!Auth::user()->hasGlobalAdmin()) {
     require 'includes/html/error-no-perm.inc.php';
     exit;
 }
 
 $pagetitle[] = "Delete device";
 
-if (LegacyAuth::user()->isDemoUser()) {
+if (Auth::user()->isDemo()) {
     demo_account();
 } else {
     if (is_numeric($_REQUEST['id'])) {
@@ -22,13 +20,13 @@ if (LegacyAuth::user()->isDemoUser()) {
         } else {
             $device = device_by_id_cache($_REQUEST['id']);
             print_error("Are you sure you want to delete device " . $device['hostname'] . "?");
-?>
+            ?>
 <br />
 <center>
   <font color="red"></font><i class="fa fa-exclamation-triangle fa-3x"></i></font>
   <br>
   <form name="form1" method="post" action="" class="form-horizontal" role="form">
-    <?php echo csrf_field() ?>
+            <?php echo csrf_field() ?>
     <div class="form-group">
       <input type="hidden" name="id" value="<?php echo $_REQUEST['id'] ?>" />
       <input type="hidden" name="confirm" value="1" />
@@ -37,13 +35,13 @@ if (LegacyAuth::user()->isDemoUser()) {
     </div>
   </form>
 </center>
-<?php
+            <?php
         }
         echo('
     </div>
   </div>');
     } else {
-?>
+        ?>
 
     <form name="form1" method="post" action="" class="form-horizontal" role="form">
         <?php echo csrf_field() ?>
@@ -81,6 +79,6 @@ if (LegacyAuth::user()->isDemoUser()) {
     <td><input type="checkbox" name="remove_rrd" value="yes"></td>
   </tr>-->
 </form>
-<?php
+        <?php
     }
 }

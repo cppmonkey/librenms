@@ -6,45 +6,45 @@ path: blob/master/doc/
 > at `mysql>` prompts) or temporarily become a user with root
 > privileges with `sudo -s` or `sudo -i`.
 
-**Please note the minimum supported PHP version is 7.1.3**
+**Please note the minimum supported PHP version is 7.2.5**
 
 # Install Required Packages
 
-```
+```bash
 apt install software-properties-common
 add-apt-repository universe
 apt update
-apt install curl composer fping git graphviz imagemagick mariadb-client mariadb-server mtr-tiny nginx-full nmap php7.2-cli php7.2-curl php7.2-fpm php7.2-gd php7.2-json php7.2-mbstring php7.2-mysql php7.2-snmp php7.2-xml php7.2-zip python-memcache python-mysqldb rrdtool snmp snmpd whois
+apt install curl composer fping git graphviz imagemagick mariadb-client mariadb-server mtr-tiny nginx-full nmap php7.2-cli php7.2-curl php7.2-fpm php7.2-gd php7.2-json php7.2-mbstring php7.2-mysql php7.2-snmp php7.2-xml php7.2-zip python-memcache python-mysqldb rrdtool snmp snmpd whois unzip python3-pip
 ```
 
 # Add librenms user
 
-```
+```bash
 useradd librenms -d /opt/librenms -M -r
 usermod -a -G librenms www-data
 ```
 
 # Download LibreNMS
 
-```
+```bash
  cd /opt
  git clone https://github.com/librenms/librenms.git
 ```
 
 # Set permissions
 
-```
+```bash
 chown -R librenms:librenms /opt/librenms
 chmod 770 /opt/librenms
 setfacl -d -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
-setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs
-/opt/librenms/bootstrap/cache/ /opt/librenms/storage/
+setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
 ```
 
 # Install PHP dependencies
 
-```
+```bash
 su - librenms
+cd /opt/librenms
 ./scripts/composer_wrapper.php install --no-dev
 exit
 ```
@@ -53,7 +53,7 @@ exit
 
 ## Configure MySQL
 
-```
+```bash
 systemctl restart mysql
 mysql -uroot -p
 ```
@@ -68,7 +68,7 @@ FLUSH PRIVILEGES;
 exit
 ```
 
-```
+```bash
 vi /etc/mysql/mariadb.conf.d/50-server.cnf
 ```
 
@@ -79,7 +79,7 @@ innodb_file_per_table=1
 lower_case_table_names=0
 ```
 
-```
+```bash
 systemctl restart mysql
 ```
 
@@ -88,22 +88,27 @@ systemctl restart mysql
 ## Configure and Start PHP-FPM
 
 Ensure date.timezone is set in php.ini to your preferred time zone.
-See http://php.net/manual/en/timezones.php for a list of supported
+See <http://php.net/manual/en/timezones.php> for a list of supported
 timezones.  Valid examples are: "America/New_York",
 "Australia/Brisbane", "Etc/UTC".
+Please remember to set the system timezone as well.
 
-```
+```bash
 vi /etc/php/7.2/fpm/php.ini
 vi /etc/php/7.2/cli/php.ini
 ```
 
-```
+```bash
 systemctl restart php7.2-fpm
+´´´
+
 ```
+timedatectl set-timezone Etc/UTC
+´´´
 
 ## Configure NGINX
 
-```
+```bash
 vi /etc/nginx/conf.d/librenms.conf
 ```
 
@@ -136,29 +141,29 @@ server {
 }
 ```
 
-```
+```bash
 rm /etc/nginx/sites-enabled/default
 systemctl restart nginx
 ```
 
 # Configure snmpd
 
-```
+```bash
 cp /opt/librenms/snmpd.conf.example /etc/snmp/snmpd.conf
 vi /etc/snmp/snmpd.conf
 ```
 
 Edit the text which says `RANDOMSTRINGGOESHERE` and set your own community string.
 
-```
+```bash
 curl -o /usr/bin/distro https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/distro
-hmod +x /usr/bin/distro
+chmod +x /usr/bin/distro
 systemctl restart snmpd
 ```
 
 # Cron job
 
-```
+```bash
 cp /opt/librenms/librenms.nonroot.cron /etc/cron.d/librenms
 ```
 
@@ -176,13 +181,13 @@ LibreNMS keeps logs in `/opt/librenms/logs`. Over time these can
 become large and be rotated out.  To rotate out the old logs you can
 use the provided logrotate config file:
 
-```
+```bash
 cp /opt/librenms/misc/librenms.logrotate /etc/logrotate.d/librenms
 ```
 
 # Set permissions
 
-```
+```bash
 chown -R librenms:librenms /opt/librenms
 setfacl -d -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
 setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
@@ -200,7 +205,7 @@ on-screen to the file. If you have to do this, please remember to set
 the permissions on config.php after you copied the on-screen contents
 to the file. Run:
 
-```
+```bash
 chown librenms:librenms /opt/librenms/config.php
 ```
 
@@ -223,7 +228,7 @@ the WebUI.
 If you ever have issues with your install, run validate.php as root in
 the librenms directory:
 
-```
+```bash
 cd /opt/librenms
 ./validate.php
 ```

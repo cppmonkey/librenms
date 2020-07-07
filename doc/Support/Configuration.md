@@ -28,22 +28,25 @@ Log files created by LibreNMS will be stored within this directory.
 
 # Database config
 
-These are the configuration options you will need to use to specify to get started.
+Set these variables either in .env or in the environment.
 
-```php
-$config['db_host'] = '127.0.0.1';
-$config['db_port'] = 3306;
-$config['db_user'] = '';
-$config['db_pass'] = '';
-$config['db_name'] = '';
+```dotenv
+DB_HOST=127.0.0.1
+DB_DATABASE=librenms
+DB_USERNAME=DBUSER
+DB_PASSWORD="DBPASS"
 ```
 
-If you use a unix socket, you can specify it with these options:
+Use non-standard port:
 
-```php
-$config['db_host']   = NULL;
-$config['db_port']   = NULL;
-$config['db_socket'] = '/run/mysqld/mysqld.sock';
+```dotenv
+DB_PORT=3306
+```
+
+Use a unix socket:
+
+```dotenv
+DB_SOCKET=/run/mysqld/mysqld.sock
 ```
 
 # Core
@@ -229,19 +232,12 @@ Set how often pages are refreshed in seconds. The default is every 5
 minutes. Some pages don't refresh at all by design.
 
 ```php
-$config['front_page']       = "pages/front/default.php";
-$config['front_page_settings']['top']['ports'] = 10;
-$config['front_page_settings']['top']['devices'] = 10;
-$config['front_page_down_box_limit'] = 10;
-$config['vertical_summary'] = 0; // Enable to use vertical summary on front page instead of horizontal
-$config['top_ports']        = 1; // This enables the top X ports box
-$config['top_devices']      = 1; // This enables the top X devices box
+$config['front_page']       = "default";
 ```
 
-A number of home pages are provided within the install and can be
-found in html/pages/front/. You can change the default by setting
-`front_page`. The other options are used to alter the look of those
-pages that support it (default.php supports these options).
+You can create your own front page by adding a blade file in `resources/views/overview/custom/`
+and setting `front_page` to it's name.
+For example, if you create `resources/views/overview/custom/foobar.blade.php`, set `front_page` to `foobar`.
 
 ```php
 // This option exists in the web UI, edit it under Global Settings -> webui
@@ -372,7 +368,7 @@ $config['device_traffic_iftype'][] = '/loopback/';
 ```
 
 Interface types that aren't graphed in the WebUI. The default array
-contains more items, please see includes/defaults.inc.php for the full list.
+contains more items, please see misc/config_definitions.json for the full list.
 
 ```php
 $config['enable_clear_discovery'] = 1;
@@ -459,12 +455,12 @@ Default SNMP options including retry and timeout settings and also
 default version and port.
 
 ```php
-$config['snmp']['timeout'] = 1;            				# timeout in seconds
-$config['snmp']['retries'] = 5;            				# how many times to retry the query
-$config['snmp']['transports'] = array('udp', 'udp6', 'tcp', 'tcp6');	# Transports to use
-$config['snmp']['version'] = ['v2c', 'v3', 'v1'];         		# Default versions to use
-$config['snmp']['port'] = 161;						# Default port
-$config['snmp']['exec_timeout'] = 1200;					# execution time limit in seconds
+$config['snmp']['timeout'] = 1;                         # timeout in seconds
+$config['snmp']['retries'] = 5;                         # how many times to retry the query
+$config['snmp']['transports'] = array('udp', 'udp6', 'tcp', 'tcp6');    # Transports to use
+$config['snmp']['version'] = ['v2c', 'v3', 'v1'];               # Default versions to use
+$config['snmp']['port'] = 161;                      # Default port
+$config['snmp']['exec_timeout'] = 1200;                 # execution time limit in seconds
 ```
 
 >NOTE: `timeout` is the time to wait for an answer and `exec_timeout`
@@ -476,6 +472,7 @@ with `[1]`, `[2]`, `[3]`, etc.
 ```php
 $config['snmp']['community'][0] = "public";
 ```
+>NOTE: This list of SNMP communities is used for auto discovery, and as a default set for any manually added device.
 
 The default v3 snmp details to use, you can expand this array with
 `[1]`, `[2]`, `[3]`, etc.
@@ -649,17 +646,40 @@ you don't need to configure full location within snmp.
 
 # Interfaces to be ignored
 
+Interfaces can be automatically ignored during discovery by modifying 
+bad_if\* entries in a default array, unsetting a default array and 
+customizing it, or creating an OS specific array. The preferred method 
+for ignoring interfaces is to use an OS specific array. The default 
+arrays can be found in misc/config_definitions.json. OS specific 
+definitions (includes/definitions/_specific_os_.yaml) can contain 
+bad_if\* arrays, but should only be modified via pull-request as 
+manipulation of the definition files will block updating. 
+
 Examples:
 
+**Add entries to default arrays**
 ```php
 $config['bad_if'][] = "voip-null";
 $config['bad_iftype'][] = "voiceEncap";
 $config['bad_if_regexp'][] = '/^lo[0-9].*/';    // loopback
 ```
 
-Numerous defaults exist for this array already (see
-includes/defaults.inc.php for the full list). You can expand this list
-by continuing the array.
+**Unset and customize a default array**
+```php
+unset($config['bad_if']);
+$config['bad_if'][] = "voip-null";
+$config['bad_if'][] = "voiceEncap";
+$config['bad_if'][] = "voiceFXO";
+...
+```
+
+**Create an OS specific array**
+```php
+$config['os']['iosxe']['bad_iftype'][] = "macSecControlledIF";
+$config['os']['iosxe']['bad_iftype'][] = "macSecUncontrolledIF";
+```
+
+**Various bad_if\* selection options available**
 
 `bad_if` is matched against the ifDescr value.
 
@@ -719,6 +739,34 @@ these are not provided by the vendor, the guess method can be disabled:
 
 ```php
 $config['sensors']['guess_limits'] = false;
+```
+
+# Ignoring Health Sensors
+
+It is possible to filter some sensors from the configuration:
+
+* Ignore all temperature sensors
+
+```php
+$config['disabled_sensors']['current'] = true;
+```
+
+* Filter all sensors matching regexp ```'/PEM Iout/'```.
+
+```php
+$config['disabled_sensors_regex'][] = '/PEM Iout/';
+```
+
+* Filter all 'current' sensors for Operating System 'vrp'.
+
+```php
+$config['os']['vrp']['disabled_sensors']['current'] = true;
+```
+
+* Filter all sensors matching regexp ```'/PEM Iout/'``` for Operating System iosxe.
+
+```php
+$config['os']['iosxe']['disabled_sensors_regex'][] = '/PEM Iout/';
 ```
 
 # Storage configuration
@@ -858,8 +906,10 @@ the standard options, all of which you can configure.
 
 ```php
 $config['api']['cors']['enabled'] = false;
-$config['api']['cors']['origin'] = '*';
+$config['api']['cors']['origin'] = ['*'];
 $config['api']['cors']['maxage'] = '86400';
-$config['api']['cors']['allowmethods'] = array('POST', 'GET', 'PUT', 'DELETE', 'PATCH');
-$config['api']['cors']['allowheaders'] = array('Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'X-Auth-Token');
+$config['api']['cors']['allowmethods'] = ['POST', 'GET', 'PUT', 'DELETE', 'PATCH'];
+$config['api']['cors']['allowheaders'] = ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'X-Auth-Token'];
+$config['api']['cors']['exposeheaders'] = ['Cache-Control', 'Content-Language', 'Content-Type', 'Expires', 'Last-Modified', 'Pragma'];
+$config['api']['cors']['allowcredentials'] = false;
 ```

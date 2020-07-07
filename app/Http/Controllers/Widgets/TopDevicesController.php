@@ -47,9 +47,10 @@ class TopDevicesController extends WidgetController
     protected $defaults = [
         'title' => null,
         'top_query' => 'traffic',
-        'sort_order' => 'asc',
+        'sort_order' => 'desc',
         'device_count' => 5,
         'time_interval' => 15,
+        'device_group' => null,
     ];
 
     public function title()
@@ -98,7 +99,7 @@ class TopDevicesController extends WidgetController
 
     public function getSettingsView(Request $request)
     {
-        return view('widgets.settings.top-devices', $this->getSettings());
+        return view('widgets.settings.top-devices', $this->getSettings(true));
     }
 
     /**
@@ -125,12 +126,15 @@ class TopDevicesController extends WidgetController
 
         /** @var Builder $query */
         return $query->with(['device' => function ($query) {
-            $query->select('device_id', 'hostname', 'sysName', 'status');
+            $query->select('device_id', 'hostname', 'sysName', 'status', 'os');
         }])
             ->select("$left_table.device_id")
             ->leftJoin('devices', "$left_table.device_id", 'devices.device_id')
             ->groupBy("$left_table.device_id")
-            ->where('devices.last_polled', '>', Carbon::now()->subMinutes($settings['time_interval']));
+            ->where('devices.last_polled', '>', Carbon::now()->subMinutes($settings['time_interval']))
+            ->when($settings['device_group'], function ($query) use ($settings) {
+                $query->inDeviceGroup($settings['device_group']);
+            });
     }
 
     /**
@@ -141,8 +145,11 @@ class TopDevicesController extends WidgetController
     {
         $settings = $this->getSettings();
 
-        return Device::hasAccess(Auth::user())->select('device_id', 'hostname', 'sysName', 'status')
+        return Device::hasAccess(Auth::user())->select('device_id', 'hostname', 'sysName', 'status', 'os')
             ->where('devices.last_polled', '>', Carbon::now()->subMinutes($settings['time_interval']))
+            ->when($settings['device_group'], function ($query) use ($settings) {
+                $query->inDeviceGroup($settings['device_group']);
+            })
             ->limit($settings['device_count']);
     }
 
@@ -174,12 +181,16 @@ class TopDevicesController extends WidgetController
 
         /** @var Builder $query */
         $query = Port::hasAccess(Auth::user())->with(['device' => function ($query) {
-            $query->select('device_id', 'hostname', 'sysName', 'status');
+            $query->select('device_id', 'hostname', 'sysName', 'status', 'os');
         }])
             ->select('device_id')
             ->groupBy('device_id')
             ->where('poll_time', '>', Carbon::now()->subMinutes($settings['time_interval'])->timestamp)
-            ->has('device')
+            ->when($settings['device_group'], function ($query) use ($settings) {
+                $query->inDeviceGroup($settings['device_group']);
+            }, function ($query) {
+                $query->has('device');
+            })
             ->orderByRaw('SUM(ifInOctets_rate + ifOutOctets_rate) ' . $sort)
             ->limit($settings['device_count']);
 
@@ -270,14 +281,16 @@ class TopDevicesController extends WidgetController
 
         /** @var Builder $query */
         $query = Storage::hasAccess(Auth::user())->with(['device' => function ($query) {
-            $query->select('device_id', 'hostname', 'sysName', 'status');
+            $query->select('device_id', 'hostname', 'sysName', 'status', 'os');
         }])
             ->leftJoin('devices', 'storage.device_id', 'devices.device_id')
             ->select('storage.device_id', 'storage_id', 'storage_descr', 'storage_perc', 'storage_perc_warn')
             ->where('devices.last_polled', '>', Carbon::now()->subMinutes($settings['time_interval']))
+            ->when($settings['device_group'], function ($query) use ($settings) {
+                $query->inDeviceGroup($settings['device_group']);
+            })
             ->orderBy('storage_perc', $sort)
             ->limit($settings['device_count']);
-
 
         $results = $query->get()->map(function ($storage) {
             $device = $storage->device;

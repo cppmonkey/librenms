@@ -11,9 +11,7 @@
  * the source code distribution for details.
  */
 
-use LibreNMS\Authentication\LegacyAuth;
-
-if (LegacyAuth::user()->hasGlobalAdmin()) {
+if (Auth::user()->hasGlobalAdmin()) {
     // Build the types list.
     $dir = \LibreNMS\Config::get('nagios_plugins');
     if (file_exists($dir) && is_dir($dir)) {
@@ -26,7 +24,7 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
             }
         }
     }
-?>
+    ?>
 
 <div class="modal fade bs-example-modal-sm" id="create-service" tabindex="-1" role="dialog" aria-labelledby="Create" aria-hidden="true">
     <div class="modal-dialog">
@@ -73,13 +71,13 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
                         </div>
                     </div>
                     <div class="form-service row">
-                        <label for='ignore' class='col-sm-3 control-label'>Ignore: </label>
+                        <label for='ignore' class='col-sm-3 control-label'>Ignore alert tag: </label>
                         <div class="col-sm-9">
                             <input type='checkbox' id='ignore' name='ignore'>
                         </div>
                     </div>
                     <div class="form-service row">
-                        <label for='disabled' class='col-sm-3 control-label'>Disabled: </label>
+                        <label for='disabled' class='col-sm-3 control-label'>Disable polling and alerting: </label>
                         <div class="col-sm-9">
                             <input type='checkbox' id='disabled' name='disabled'>
                         </div>
@@ -167,5 +165,5 @@ $('#service-submit').click('', function(e) {
 });
 
 </script>
-<?php
+    <?php
 }

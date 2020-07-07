@@ -31,22 +31,20 @@ use Auth;
 use Cache;
 use Carbon\Carbon;
 use LibreNMS\Config;
-use LibreNMS\Exceptions\FilePermissionsException;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Toastr;
 
 class Checks
 {
-    public static function preBoot()
+    public static function preAutoload()
     {
-        // check php extensions
-        if ($missing = self::missingPhpExtensions()) {
+        // Check PHP version otherwise it will just say server error
+        if (version_compare('7.2.5', PHP_VERSION, '>=')) {
             self::printMessage(
-                "Missing PHP extensions.  Please install and enable them on your LibreNMS server.",
-                $missing,
+                'PHP version 7.2.5 or newer is required to run LibreNMS',
+                null,
                 true
             );
-        }
+        };
     }
 
     /**
@@ -63,6 +61,18 @@ class Checks
         }
     }
 
+    public static function preBoot()
+    {
+        // check php extensions
+        if ($missing = self::missingPhpExtensions()) {
+            self::printMessage(
+                "Missing PHP extensions.  Please install and enable them on your LibreNMS server.",
+                $missing,
+                true
+            );
+        }
+    }
+
     /**
      * Post boot Toast messages
      */
@@ -73,12 +83,12 @@ class Checks
             return;
         }
 
-        Cache::put('checks_popup_timeout', true, Config::get('checks_popup_timer', 5));
+        Cache::put('checks_popup_timeout', true, Config::get('checks_popup_timer', 5) * 60);
 
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            $notifications = Notification::isUnread($user)->where('severity', '>', 1)->get();
+            $notifications = Notification::isUnread($user)->where('severity', '>', \LibreNMS\Enum\Alert::OK)->get();
             foreach ($notifications as $notification) {
                 Toastr::error("<a href='notifications/'>$notification->body</a>", $notification->title);
             }
@@ -86,7 +96,7 @@ class Checks
             $warn_sec = Config::get('rrd.step', 300) * 3;
             if (Device::isUp()->where('last_polled', '<=', Carbon::now()->subSeconds($warn_sec))->exists()) {
                 $warn_min = $warn_sec / 60;
-                Toastr::warning('<a href="poll-log/filter=unpolled/">It appears as though you have some devices that haven\'t completed polling within the last ' . $warn_min . ' minutes, you may want to check that out :)</a>', 'Devices unpolled');
+                Toastr::warning('<a href="poller/log?filter=unpolled/">It appears as though you have some devices that haven\'t completed polling within the last ' . $warn_min . ' minutes, you may want to check that out :)</a>', 'Devices unpolled');
             }
 
             // Directory access checks
@@ -101,6 +111,28 @@ class Checks
             } elseif (!is_writable($temp_dir)) {
                 Toastr::error("Temp Directory is not writable ($temp_dir).  Graphing may fail. <a href='" . url('validate') . "'>Validate your install</a>");
             }
+        }
+    }
+
+    /**
+     * Check the script is running as the right user (works before config is available)
+     */
+    public static function runningUser()
+    {
+        if (function_exists('posix_getpwuid') && posix_getpwuid(posix_geteuid())['name'] !== get_current_user()) {
+            if (get_current_user() == 'root') {
+                self::printMessage(
+                    'Error: lnms file is owned by root, it should be owned and ran by a non-privileged user.',
+                    null,
+                    true
+                );
+            }
+
+            self::printMessage(
+                'Error: You must run lnms as the user ' . get_current_user(),
+                null,
+                true
+            );
         }
     }
 
@@ -133,7 +165,7 @@ class Checks
             return ['mysqlnd'];
         }
 
-        $required_modules = ['mbstring', 'pcre', 'curl', 'session', 'xml', 'gd'];
+        $required_modules = ['mbstring', 'pcre', 'curl', 'xml', 'gd'];
 
         return array_filter($required_modules, function ($module) {
             return !extension_loaded($module);

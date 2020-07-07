@@ -34,12 +34,14 @@ class EventlogController extends WidgetController
     protected $defaults = [
         'title' => null,
         'device' => null,
+        'device_group' => null,
         'eventtype' => null,
+        'hidenavigation' => 0,
     ];
 
     public function getSettingsView(Request $request)
     {
-        $data = $this->getSettings();
+        $data = $this->getSettings(true);
 
         $data['device'] = Device::hasAccess($request->user())->find($data['device']);
 

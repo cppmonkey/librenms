@@ -23,9 +23,9 @@
  * @author     Neil Lathwood <neil@lathwood.co.uk>
  */
 
-use LibreNMS\Authentication\LegacyAuth;
+use LibreNMS\Alerting\QueryBuilderParser;
 
-if (!LegacyAuth::user()->hasGlobalAdmin()) {
+if (!Auth::user()->hasGlobalAdmin()) {
     die('ERROR: You need to be admin');
 }
 
@@ -55,7 +55,9 @@ if (!LegacyAuth::user()->hasGlobalAdmin()) {
                             echo "
                                 <tr>
                                     <td>{$rule['name']}</td>
-                                    <td>{$rule['rule']}</td>
+                                    <td>";
+                            echo !empty($rule['builder']) ? QueryBuilderParser::fromJson($rule['builder'])->toSql(false) : $rule['rule'];
+                            echo "  </td>
                                     <td>{$rule['rule_id']}</td>
                                 </tr>
                             ";
@@ -85,9 +87,11 @@ if (!LegacyAuth::user()->hasGlobalAdmin()) {
                                     dataType: "json",
                                     success: function (data) {
                                         if (data.status == 'ok') {
+                                            $("#search_rule_modal").one('hidden.bs.modal', function(event) {
+                                                loadRule(data);
+                                                $('#create-alert').modal('show');
+                                            });
                                             $("#search_rule_modal").modal('hide');
-                                            loadRule(data);
-                                            $('#create-alert').modal('show');
                                         } else {
                                             toastr.error(data.message);
                                         }

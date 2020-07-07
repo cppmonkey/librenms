@@ -10,7 +10,7 @@ We now have support for polling data at intervals to fit your needs.
 - You must also change your cron entry for `poller-wrapper.py` for
   this to work (if you change from the default 300 seconds).
 - Your polling _MUST_ complete in the time you configure for the
-  heartbeat step value. See `/pollers/tab=pollers/` in your WebUI for
+  heartbeat step value. See `/poller` in your WebUI for
   your current value.
 - This will only affect RRD files created from the moment you change
   your settings.
@@ -24,7 +24,7 @@ We now have support for polling data at intervals to fit your needs.
   [RRDCached](../Extensions/RRDCached.md) configuration that can save
   a lot of write IOPS.
 
-To make the changes, please navigate to `/settings/sub=external/`
+To make the changes, please navigate to `/settings/poller/rrdtool/`
 within your WebUI. Select RRDTool Setup and then update the two values
 for step and heartbeat intervals:
 

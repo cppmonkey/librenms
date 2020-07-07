@@ -25,6 +25,7 @@
 
 namespace LibreNMS\DB;
 
+use Illuminate\Support\Str;
 use LibreNMS\Config;
 use LibreNMS\Util\Version;
 use Symfony\Component\Yaml\Yaml;
@@ -89,19 +90,14 @@ class Schema
      * Get the primary key column(s) for a table
      *
      * @param string $table
-     * @return string|array if a single column just the name is returned, otherwise an array of column names
+     * @return string if a single column just the name is returned, otherwise the first column listed will be returned
      */
     public function getPrimaryKey($table)
     {
         $schema = $this->getSchema();
-
         $columns = $schema[$table]['Indexes']['PRIMARY']['Columns'];
 
-        if (count($columns) == 1) {
-            return reset($columns);
-        }
-
-        return $columns;
+        return reset($columns);
     }
 
     public function getSchema()
@@ -170,7 +166,11 @@ class Schema
                 $base => $paths
             ];
 
-            file_put_contents($cache_file, serialize($cache));
+            if (is_writable($cache_file)) {
+                file_put_contents($cache_file, serialize($cache));
+            } else {
+                d_echo("Could not write cache file ($cache_file)!\n");
+            }
         }
 
         return $cache[$base];
@@ -275,7 +275,7 @@ class Schema
 
     public function getTableFromKey($key)
     {
-        if (ends_with($key, '_id')) {
+        if (Str::endsWith($key, '_id')) {
             // hardcoded
             if ($key == 'app_id') {
                 return 'applications';
@@ -284,8 +284,8 @@ class Schema
             // try to guess assuming key_id = keys table
             $guessed_table = substr($key, 0, -3);
 
-            if (!ends_with($guessed_table, 's')) {
-                if (ends_with($guessed_table, 'x')) {
+            if (!Str::endsWith($guessed_table, 's')) {
+                if (Str::endsWith($guessed_table, 'x')) {
                     $guessed_table .= 'es';
                 } else {
                     $guessed_table .= 's';

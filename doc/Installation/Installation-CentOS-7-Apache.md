@@ -6,17 +6,55 @@ path: blob/master/doc/
 > at `mysql>` prompts) or temporarily become a user with root
 > privileges with `sudo -s` or `sudo -i`.
 
-**Please note the minimum supported PHP version is 7.1.3**
+**Please note the minimum supported PHP version is 7.2.5**
 
-# Install Required Packages
+
+## Install Common Required Packages ##
 
 ```
 yum install epel-release
 ```
 
 ```
-rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
-yum install composer cronie fping git httpd ImageMagick jwhois mariadb mariadb-server mtr MySQL-python net-snmp net-snmp-utils nmap php72w php72w-cli php72w-common php72w-curl php72w-gd php72w-mbstring php72w-mysqlnd php72w-process php72w-snmp php72w-xml php72w-zip python-memcached rrdtool
+yum install git cronie fping jwhois ImageMagick mtr MySQL-python net-snmp net-snmp-utils nmap python-memcached rrdtool policycoreutils-python httpd mariadb mariadb-server unzip python3 python3-pip
+```
+
+### Install PHP
+
+CentOS 7 comes with php 5.4 which is not compatible with LibreNMS.
+There are multiple ways to install php 7.x on CentOS 7, like Webtatic, Remi or SCL, the last two are maintained by Remi Collet of RedHat.
+
+#### Running with Remi PHP
+
+```
+yum localinstall http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+```
+Install the yum-config-manager to change to Remi PHP 7.3 Repo.
+```
+yum install yum-utils
+yum-config-manager --enable remi-php73
+```
+Install the required packages
+
+```
+yum install mod_php php-cli php-common php-curl php-gd php-mbstring php-process php-snmp php-xml php-zip php-memcached php-mysqlnd
+```
+
+#### Running with CentOS SCL php
+
+```
+yum install centos-release-scl
+```
+
+```
+yum install rh-php72 rh-php72-php-cli rh-php72-php-common rh-php72-php-curl rh-php72-php-gd rh-php72-php-mbstring rh-php72-php-process rh-php72-php-snmp rh-php72-php-xml rh-php72-php-zip rh-php72-php-memcached rh-php72-php-mysqlnd
+```
+
+```
+ln -s /opt/rh/rh-php72/root/usr/bin/php /usr/bin/php
+ln -s /opt/rh/httpd24/root/etc/httpd/conf.d/rh-php72-php.conf /etc/httpd/conf.d/
+ln -s /opt/rh/httpd24/root/etc/httpd/conf.modules.d/15-rh-php72-php.conf /etc/httpd/conf.modules.d/
+ln -s /opt/rh/httpd24/root/etc/httpd/modules/librh-php72-php7.so /etc/httpd/modules/
 ```
 
 # Add librenms user
@@ -35,11 +73,11 @@ git clone https://github.com/librenms/librenms.git
 
 # Set permissions
 
-````
+```
 chown -R librenms:librenms /opt/librenms
 chmod 770 /opt/librenms
-setfacl -d -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
-setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
+setfacl -d -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/ /opt/librenms/cache
+setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/ /opt/librenms/cache
 ```
 
 # Install PHP dependencies
@@ -55,7 +93,7 @@ exit
 ## Configure MySQL
 
 ```
-systemctl start mariadb
+systemctl enable --now mariadb
 mysql -u root
 ```
 
@@ -81,7 +119,6 @@ lower_case_table_names=0
 ```
 
 ```
-systemctl enable mariadb
 systemctl restart mariadb
 ```
 
@@ -94,9 +131,23 @@ See <http://php.net/manual/en/timezones.php> for a list of supported
 timezones.  Valid examples are: "America/New_York",
 "Australia/Brisbane", "Etc/UTC".
 
+When PHP is configured with open_basedir, be sure to allow the following paths for LibreNMS to work:
+
+```
+php_admin_value[open_basedir] = "/opt/librenms:/usr/lib64/nagios/plugins:/dev/urandom:/usr/sbin/fping:/usr/sbin/fping6:/usr/bin/snmpgetnext:/usr/bin/rrdtool:/usr/bin/snmpwalk:/usr/bin/snmpget:/usr/bin/snmpbulkwalk:/usr/bin/snmptranslate:/usr/bin/traceroute:/usr/bin/whois:/bin/ping:/usr/sbin/mtr:/usr/bin/nmap:/usr/sbin/ipmitool:/usr/bin/virsh:/usr/bin/nfdump"
+```
+
 ```
 vi  /etc/php.ini
 ```
+
+or
+
+```
+vi /etc/opt/rh/rh-php72/php.ini
+```
+
+
 
 ## Configure Apache
 
@@ -126,8 +177,7 @@ Add the following config, edit `ServerName` as required:
 > should be :)) then you will need to disable the default site. `rm -f /etc/httpd/conf.d/welcome.conf`
 
 ```
-systemctl enable httpd
-systemctl restart httpd
+systemctl enable --now httpd
 ```
 
 # SELinux
@@ -153,7 +203,16 @@ restorecon -RFvv /opt/librenms/storage/
 semanage fcontext -a -t httpd_sys_content_t '/opt/librenms/bootstrap/cache(/.*)?'
 semanage fcontext -a -t httpd_sys_rw_content_t '/opt/librenms/bootstrap/cache(/.*)?'
 restorecon -RFvv /opt/librenms/bootstrap/cache/
+semanage fcontext -a -t httpd_sys_content_t '/opt/librenms/cache(/.*)?'
+semanage fcontext -a -t httpd_sys_rw_content_t '/opt/librenms/cache(/.*)?'
+restorecon -RFvv /var/www/opt/librenms/cache/
 setsebool -P httpd_can_sendmail=1
+```
+
+Additional SELinux problems may be found by executing the following command
+
+```
+audit2why < /var/log/audit/audit.log
 ```
 
 # Allow fping
@@ -302,3 +361,4 @@ If you would like to help make LibreNMS better there are [many ways to
 help](http://docs.librenms.org/Support/FAQ/#what-can-i-do-to-help). You
 can also [back LibreNMS on Open
 Collective](https://t.libren.ms/donations).
+

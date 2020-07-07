@@ -26,11 +26,11 @@
  * @author     Tony Murray <murraytony@gmail.com>
  */
 
-use LibreNMS\Authentication\LegacyAuth;
+use Illuminate\Support\Str;
 
 header('Content-type: application/json');
 
-if (!LegacyAuth::user()->hasGlobalAdmin()) {
+if (!Auth::user()->hasGlobalAdmin()) {
     die(json_encode([
         'status' => 'error',
         'message' => 'You need to be admin',
@@ -52,7 +52,7 @@ $new_title = convert_template($vars['title']);
 
 function convert_template($line)
 {
-    if (str_contains($line, '{calc')) {
+    if (Str::contains($line, '{calc')) {
         return preg_replace(
             [
                 '/{calc[ ]*([\w\d\s\%\.\(\)\*\/\-\+\/]+)}/',// Replaces {calc (something*100)}

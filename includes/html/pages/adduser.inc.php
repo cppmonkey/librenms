@@ -4,9 +4,9 @@ use LibreNMS\Authentication\LegacyAuth;
 
 $no_refresh = true;
 
-if (!LegacyAuth::user()->hasGlobalAdmin()) {
+if (!Auth::user()->hasGlobalAdmin()) {
     include 'includes/html/error-no-perm.inc.php';
-} elseif (LegacyAuth::user()->isDemoUser()) {
+} elseif (Auth::user()->isDemo()) {
     demo_account();
 } else {
     echo '<h3>Add User</h3>';
@@ -46,7 +46,7 @@ if (!LegacyAuth::user()->hasGlobalAdmin()) {
     <div class='col-sm-6'>
     </div>
   </div>";
-    ?>
+        ?>
     <div class='form-group'>
     <label for='new_password' class='col-sm-2 control-label'>Password</label>
     <div class='col-sm-4'>
@@ -56,14 +56,14 @@ if (!LegacyAuth::user()->hasGlobalAdmin()) {
     </div>
     </div>
 
-    <?php
-    if ($_POST['action'] == 'add' && !$_POST['new_password']) {
-        echo '<span class=red>Please enter a password!</span><br />';
-    }
+        <?php
+        if ($_POST['action'] == 'add' && !$_POST['new_password']) {
+            echo '<span class=red>Please enter a password!</span><br />';
+        }
 
-    echo "
+        echo "
   <div class='form-group'>";
-    echo "<label for='new_realname' class='col-sm-2 control-label'>Realname</label>
+        echo "<label for='new_realname' class='col-sm-2 control-label'>Realname</label>
     <div class='col-sm-4'>
       <input name='new_realname' class='form-control input-sm'>
     </div>
@@ -98,7 +98,7 @@ if (!LegacyAuth::user()->hasGlobalAdmin()) {
     <div class='col-sm-6'>
     </div>
   </div>";
-    echo "<div class='form-group'>
+        echo "<div class='form-group'>
     <div class='col-sm-6'>
       
     </div>
@@ -106,7 +106,7 @@ if (!LegacyAuth::user()->hasGlobalAdmin()) {
     </div>
   </div>";
 
-    echo '</form>';
+        echo '</form>';
     } else {
         echo '<span class="red">Auth module does not allow user management!</span><br />';
     }//end if

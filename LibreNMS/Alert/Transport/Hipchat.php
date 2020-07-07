@@ -23,6 +23,7 @@
  */
 namespace LibreNMS\Alert\Transport;
 
+use LibreNMS\Enum\AlertState;
 use LibreNMS\Alert\Transport;
 
 class Hipchat extends Transport
@@ -75,7 +76,6 @@ class Hipchat extends Transport
                 $color = $option["color"];
             }
         }
-
 
         $data[] = "message=" . urlencode($obj["msg"]);
         if ($version == 1) {

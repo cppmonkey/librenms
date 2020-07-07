@@ -1,34 +1,11 @@
 <?php
 
 // FIXME svn stuff still using optc etc, won't work, needs updating!
-use LibreNMS\Authentication\LegacyAuth;
 use LibreNMS\Config;
 use Symfony\Component\Process\Process;
 
-if (LegacyAuth::user()->hasGlobalAdmin()) {
-    if (!is_array(Config::get('rancid_configs'))) {
-        Config::set('rancid_configs', array(Config::get('rancid_configs')));
-    }
-
-    if (Config::has('rancid_configs.0')) {
-        foreach (Config::get('rancid_configs') as $configs) {
-            if ($configs[(strlen($configs) - 1)] != '/') {
-                $configs .= '/';
-            }
-
-            if (is_file($configs.$device['hostname'])) {
-                $file = $configs.$device['hostname'];
-            } elseif (is_file($configs.strtok($device['hostname'], '.'))) { // Strip domain
-                $file = $configs.strtok($device['hostname'], '.');
-            } else {
-                if (!empty(Config::get('mydomain'))) { // Try with domain name if set
-                    if (is_file($configs.$device['hostname'].'.'.Config::get('mydomain'))) {
-                        $file = $configs.$device['hostname'].'.'.Config::get('mydomain');
-                    }
-                }
-            } // end if
-        }
-
+if (Auth::user()->hasGlobalAdmin()) {
+    if (!empty($rancid_file)) {
         echo '<div style="clear: both;">';
 
         print_optionbar_start('', '');
@@ -45,7 +22,7 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
 
         if (Config::get('rancid_repo_type') == 'svn' && function_exists('svn_log')) {
             $sep     = ' | ';
-            $svnlogs = svn_log($file, SVN_REVISION_HEAD, null, 8);
+            $svnlogs = svn_log($rancid_file, SVN_REVISION_HEAD, null, 8);
             $revlist = array();
 
             foreach ($svnlogs as $svnlog) {
@@ -69,7 +46,7 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
         if (Config::get('rancid_repo_type') == 'git') {
             $sep     = ' | ';
 
-            $process = new Process(array('git', 'log', '-n 8', '--pretty=format:%h;%ct', $file), $configs);
+            $process = new Process(array('git', 'log', '-n 8', '--pretty=format:%h;%ct', $rancid_file), $rancid_path);
             $process->run();
             $gitlogs_raw = explode(PHP_EOL, $process->getOutput());
             $gitlogs = array();
@@ -104,7 +81,7 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
 
         if (Config::get('rancid_repo_type') == 'svn') {
             if (function_exists('svn_log') && in_array($vars['rev'], $revlist)) {
-                list($diff, $errors) = svn_diff($file, ($vars['rev'] - 1), $file, $vars['rev']);
+                list($diff, $errors) = svn_diff($rancid_file, ($vars['rev'] - 1), $rancid_file, $vars['rev']);
                 if (!$diff) {
                     $text = 'No Difference';
                 } else {
@@ -117,13 +94,13 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
                     fclose($errors);
                 }
             } else {
-                $fh   = fopen($file, 'r') or die("Can't open file");
-                $text = fread($fh, filesize($file));
+                $fh   = fopen($rancid_file, 'r') or die("Can't open file");
+                $text = fread($fh, filesize($rancid_file));
                 fclose($fh);
             }
         } elseif (Config::get('rancid_repo_type') == 'git') {
             if (in_array($vars['rev'], $revlist)) {
-                $process = new Process(array('git', 'diff', $vars['rev'] . '^', $vars['rev'], $file), $configs);
+                $process = new Process(array('git', 'diff', $vars['rev'] . '^', $vars['rev'], $rancid_file), $rancid_path);
                 $process->run();
                 $diff = $process->getOutput();
                 if (!$diff) {
@@ -133,8 +110,8 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
                     $previous_config = $vars['rev'] . '^';
                 }
             } else {
-                $fh   = fopen($file, 'r') or die("Can't open file");
-                $text = fread($fh, filesize($file));
+                $fh   = fopen($rancid_file, 'r') or die("Can't open file");
+                $text = fread($fh, filesize($rancid_file));
                 fclose($fh);
             }
         }
@@ -317,18 +294,14 @@ if (LegacyAuth::user()->hasGlobalAdmin()) {
                           </div>';
     }
     if (!empty($text)) {
-        if (isset($previous_config)) {
-            $language = 'diff';
-        } else {
-            $language = 'ios';
-        }
-        $geshi = new GeSHi($text, $language);
+        $language = isset($previous_config) ? 'diff' : Config::getOsSetting($device['os'], 'config_highlighting', 'ios');
+        $geshi = new GeSHi(htmlspecialchars_decode($text), $language);
         $geshi->enable_line_numbers(GESHI_FANCY_LINE_NUMBERS);
         $geshi->set_overall_style('color: black;');
         // $geshi->set_line_style('color: #999999');
         echo '<div class="config">';
         echo '<input id="linenumbers" class="btn btn-primary" type="submit" value="Hide line numbers"/>';
-        echo htmlspecialchars_decode($geshi->parse_code());
+        echo $geshi->parse_code();
         echo '</div>';
     }
 }//end if

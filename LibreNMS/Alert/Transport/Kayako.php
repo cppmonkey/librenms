@@ -11,6 +11,7 @@
  */
 namespace LibreNMS\Alert\Transport;
 
+use LibreNMS\Enum\AlertState;
 use LibreNMS\Alert\Transport;
 use LibreNMS\Config;
 
@@ -56,23 +57,23 @@ class Kayako extends Transport
             'signature' => $signature
         );
         $post_data = http_build_query($protocol, '', '&');
-        
+
         $curl     = curl_init();
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $post_data);
         curl_exec($curl);
-        
+
         $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         if ($code != 200) {
             var_dump("Kayako returned Error, retry later");
             return false;
         }
-        
+
         return true;
     }
-    
+
     public static function configTemplate()
     {
         return [

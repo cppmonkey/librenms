@@ -24,25 +24,27 @@ the application discovery module.
 
 ### SUDO
 
-One majoy thing to keep in mind when using SNMP extends is on my
-systems these run as a unprivlidged user. In these situations you need
-to use sudo.
+One major thing to keep in mind when using SNMP extend is these run as the snmpd
+user that can be an unprivileged user. In these situations you need to use sudo.
 
-To test if you need to see if you need to, first check to see what
-user snmpd is running as. Then test you run it as that user with out
-issue. For example if snmpd is running as 'Debian-snmp' and we want
-to run the extend for proxmox, we would do `sudo -u Debian-snmp
-/usr/local/bin/proxmox` and make sure it runs as expected.
+To test if you need sudo, first check the user snmpd is running as.
+Then test if you can run the extend script as that user without issue.
+For example if snmpd is running as 'Debian-snmp' and we want
+to run the extend for proxmox, we check that the following run without error:
 
-If it does not work, then you will need to use sudo with the
-extend. And for the example above, that would mean adding the line
-below to the sudoers file.
+```
+sudo -u Debian-snmp /usr/local/bin/proxmox
+```
+
+If it doesn't work, then you will need to use sudo with the extend command.
+For the example above, that would mean adding the line below to the sudoers file:
 
 ```
 Debian-snmp ALL = NOPASSWD: /usr/local/bin/proxmox
 ```
 
-And we would then just add sudo to snmpd.conf like below for it.
+Finally we would need to add sudo to the extend command, which would look
+like that for proxmox:
 
 ```
 extend proxmox /usr/bin/sudo /usr/local/bin/proxmox
@@ -85,7 +87,9 @@ by following the steps under the `SNMP Extend` heading.
 
 1. [Apache](#apache) - SNMP extend, Agent
 1. [Asterisk](#asterisk) - SNMP extend
+1. [backupninja](#backupninja) - SNMP extend
 1. [BIND9/named](#bind9-aka-named) - SNMP extend, Agent
+1. [Certificate](#certificate) - Certificate extend
 1. [C.H.I.P.](#chip) - SNMP extend
 1. [DHCP Stats](#dhcp-stats) - SNMP extend
 1. [Entropy](#entropy) - SNMP extend
@@ -96,6 +100,7 @@ by following the steps under the `SNMP Extend` heading.
 1. [FreeRADIUS](#freeradius) - SNMP extend, Agent
 1. [Freeswitch](#freeswitch) - SNMP extend, Agent
 1. [GPSD](#gpsd) - SNMP extend, Agent
+1. [Mailcow-dockerized postfix](#mailcow-dockerized-postfix) - SNMP extend
 1. [Mailscanner](#mailscanner) - SNMP extend
 1. [Mdadm](#mdadm) - SNMP extend
 1. [Memcached](#memcached) - SNMP extend
@@ -117,8 +122,12 @@ by following the steps under the `SNMP Extend` heading.
 1. [PowerDNS Recursor](#powerdns-recursor) - Direct, SNMP extend, Agent
 1. [PowerDNS dnsdist](#powerdns-dnsdist) - SNMP extend
 1. [Proxmox](#proxmox) - SNMP extend
+1. [Puppet Agent](#puppet_agent) - SNMP extend
+1. [PureFTPd](#pureftpd) - SNMP extend
 1. [Raspberry PI](#raspberry-pi) - SNMP extend
+1. [Redis](#redis) - SNMP extend
 1. [SDFS info](#sdfs-info) - SNMP extend
+1. [Seafile](#seafile) - SNMP extend
 1. [SMART](#smart) - SNMP extend
 1. [Squid](#squid) - SNMP proxy
 1. [TinyDNS/djbdns](#tinydns-aka-djbdns) - Agent
@@ -146,7 +155,14 @@ wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/apach
 
 2: Make the script executable (chmod +x /etc/snmp/apache-stats.py)
 
-3: Verify it is working by running /etc/snmp/apache-stats.py In some
+3: Create the cache directory, '/var/cache/librenms/' and make sure
+that it is owned by the user running the SNMP daemon.
+
+```
+mkdir -p /var/cache/librenms/
+```
+
+4: Verify it is working by running /etc/snmp/apache-stats.py In some
 cases urlgrabber and pycurl needs to be installed, in Debian this can
 be achieved by:
 
@@ -154,17 +170,15 @@ be achieved by:
 apt-get install python-urlgrabber python-pycurl
 ```
 
-Make sure to remove /tmp/apache-snmp afterwards.
-
-4: Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
+5: Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
 
 ```
 extend apache /etc/snmp/apache-stats.py
 ```
 
-5: Restart snmpd on your host
+6: Restart snmpd on your host
 
-6: Test by running
+7: Test by running
 
 ```
 snmpwalk <various options depending on your setup> localhost NET-SNMP-EXTEND-MIB::nsExtendOutput2Table
@@ -179,7 +193,14 @@ and copy the `apache` script to `/usr/lib/check_mk_agent/local/`
 (If you get error like "Can't locate LWP/Simple.pm". libwww-perl needs
 to be installed: apt-get install libwww-perl)
 
-2: On the device page in Librenms, edit your host and check the
+2: Create the cache directory, '/var/cache/librenms/' and make sure
+that it is owned by the user running the SNMP daemon.
+
+```
+mkdir -p /var/cache/librenms/
+```
+
+3: On the device page in Librenms, edit your host and check the
 `Apache` under the Applications tab.
 
 # Asterisk
@@ -188,9 +209,12 @@ A small shell script that reports various Asterisk call status.
 
 ## SNMP Extend
 
-1: Copy the [asterisk
+1: Download the [asterisk
 script](https://github.com/librenms/librenms-agent/blob/master/snmp/asterisk)
 to `/etc/snmp/` on your asterisk server.
+```
+wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/asterisk -O /etc/snmp/asterisk
+```
 
 2: Run `chmod +x /etc/snmp/asterisk`
 
@@ -210,13 +234,35 @@ The application should be auto-discovered as described at the top of
 the page. If it is not, please follow the steps set out under `SNMP
 Extend` heading top of page.
 
+# backupninja
+
+A small shell script that reports status of last backupninja backup.
+
+## SNMP Extend
+
+1: Download the [backupninja
+script](https://github.com/librenms/librenms-agent/blob/master/snmp/backupninja.py)
+to `/etc/snmp/backupninja.py` on your backuped server.
+```
+wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/backupninja.py -O /etc/snmp/backupninja.py`
+```
+2: Make the script executable: `chmod +x /etc/snmp/backupninja.py`
+3: Edit your snmpd.conf file (usually `/etc/snmp/snmpd.conf`) and add:
+
+```
+extend backupninja /etc/snmp/backupninja.py
+```
+
+4: Restart snmpd on your host
+
+
 # BIND9 aka named
 
 1: Create stats file with appropriate permissions:
 
-```shell
-~$ touch /var/run/named/stats
-~$ chown bind:bind /var/run/named/stats
+```bash
+~$ touch /var/cache/bind/stats
+~$ chown bind:bind /var/cache/bind/stats
 ```
 
 Change `user:group` to the user and group that's running bind/named.
@@ -226,7 +272,7 @@ Change `user:group` to the user and group that's running bind/named.
 ```text
 options {
     ...
-    statistics-file "/var/run/named/stats";
+    statistics-file "/var/cache/bind/stats";
     zone-statistics yes;
     ...
 };
@@ -235,7 +281,7 @@ options {
 3: Restart your bind9/named after changing the configuration.
 
 4: Verify that everything works by executing `rndc stats && cat
-/var/run/named/stats`. In case you get a `Permission Denied` error,
+/var/cache/bind/stats`. In case you get a `Permission Denied` error,
 make sure you changed the ownership correctly.
 
 5: Also be aware that this file is appended to each time `rndc stats`
@@ -272,7 +318,7 @@ own settings.
 rndc = The path to rndc. Default: /usr/bin/env rndc
 call_rndc = A 0/1 boolean on whether or not to call rndc stats.
     Suggest to set to 0 if using netdata. Default: 1
-stats_file = The path to the named stats file. Default: /var/run/named/stats
+stats_file = The path to the named stats file. Default: /var/cache/bind/stats
 agent = A 0/1 boolean for if this is being used as a LibreNMS
     agent or not. Default: 0
 zero_stats = A 0/1 boolean for if the stats file should be zeroed
@@ -318,12 +364,47 @@ via `wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/
 
 3: Set the variable 'agent' to '1' in the config.
 
+# Certificate
+
+A small python3 script that checks age and remaining validity of certificates
+
+This script needs following packages on Debian/Ubuntu Systems:
+* python3
+* python3-openssl
+
+Content of an example /etc/snmp/certificate.json . Please edit with your own settings.
+```
+{"domains": [
+    {"fqdn": "www.mydomain.com"},
+    {"fqdn": "some.otherdomain.org",
+     "port": 8443},
+    {"fqdn": "personal.domain.net"}
+]
+}
+```
+Key 'domains' contains a list of domains to check.
+Optional you can define a port. By default it checks on port 443.
+
+## SNMP Extend
+1. Copy the shell script to the desired host.
+```
+wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/certificate.py -O /etc/snmp/certificate.py
+```
+
+2. Run `chmod +x /etc/snmp/certificate.py`
+
+3. Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
+```
+extend certificate /etc/snmp/certificate.py
+```
+4. Restart snmpd on your host
+
+The application should be auto-discovered as described at the top of the page. If it is not, please follow the steps set out under `SNMP Extend` heading top of page.
+
 # C.H.I.P
 
 C.H.I.P. is a $9 R8 based tiny computer ideal for small projects.
 Further details: <https://getchip.com/pages/chip>
-
-## SNMP Extend
 
 1: Copy the shell script to the desired host.
 
@@ -347,25 +428,38 @@ Extend` heading top of page.
 
 # DHCP Stats
 
-A small shell script that reports current DHCP leases stats.
+A small python3 script that reports current DHCP leases stats and pool usage.
+
+Also you have to install the dhcpd-pools Package.
+Under Ubuntu/Debian just run `apt install dhcpd-pools`
 
 ## SNMP Extend
 
 1: Copy the shell script to the desired host.
 
 ```
-wget https://github.com/librenms/librenms-agent/raw/master/snmp/dhcp-status.sh -O /etc/snmp/dhcp-status.sh
+wget https://github.com/librenms/librenms-agent/raw/master/snmp/dhcp.py -O /etc/snmp/dhcp.py
 ```
 
-2: Run `chmod +x /etc/snmp/dhcp-status.sh`
+2: Run `chmod +x /etc/snmp/dhcp.py`
 
-3: Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
+
+3: edit a config file:
+
+Content of an example /etc/snmp/dhcp.json . Please edit with your own settings.
+```
+{"leasefile": "/var/lib/dhcp/dhcpd.leases"
+}
+```
+Key 'leasefile' specifies the path to your lease file.
+
+4: Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
 
 ```
-extend dhcpstats /etc/snmp/dhcp-status.sh
+extend dhcpstats /etc/snmp/dhcp.py
 ```
 
-4: Restart snmpd on your host
+5: Restart snmpd on your host
 
 The application should be auto-discovered as described at the top of
 the page. If it is not, please follow the steps set out under `SNMP
@@ -683,6 +777,32 @@ You may need to configure `$server` or `$port`.
 
 Verify it is working by running `/usr/lib/check_mk_agent/local/gpsd`
 
+# mailcow-dockerized postfix
+
+## SNMP Extend
+
+1: Download the script into the desired host.
+
+```
+wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/mailcow-dockerized-postfix -O /etc/snmp/mailcow-dockerized-postfix
+```
+
+2: Run `chmod +x /etc/snmp/mailcow-dockerized-postfix`
+
+> Maybe you will be neeed to install `pflogsumm` on debian based OS. Please check if you have package installed. 
+
+3: Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
+
+```
+extend mailcow-postfix /etc/snmp/mailcow-dockerized-postfix
+```
+
+4: Restart snmpd on your host
+
+The application should be auto-discovered as described at the top of
+the page. If it is not, please follow the steps set out under `SNMP
+Extend` heading top of page.
+
 # Mailscanner
 
 ## SNMP Extend
@@ -712,19 +832,22 @@ Extend` heading top of page.
 This shell script checks mdadm health and array data
 
 ## SNMP Extend
-1. Download the script onto the desired host.
+
+1: Download the script onto the desired host.
+
 ```
 wget https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/mdadm -O /etc/snmp/mdadm
 ```
 
-2. Run `chmod +x /etc/snmp/mdadm`
+2: Run `chmod +x /etc/snmp/mdadm`
 
-3. Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
+3: Edit your snmpd.conf file (usually /etc/snmp/snmpd.conf) and add:
+
 ```
 extend mdadm /etc/snmp/mdadm
 ```
 
-4. Restart snmpd on your host
+4: Restart snmpd on your host
 
 The application should be auto-discovered as described at the
 top of the page. If it is not, please follow the steps set out
@@ -794,6 +917,13 @@ echo -n "foobar.value " $(date +%s) #Populate a value, here unix-timestamp
 [Install the agent](Agent-Setup.md) on this device if it isn't already
 and copy the `mysql` script to `/usr/lib/check_mk_agent/local/`
 
+Create the cache directory, '/var/cache/librenms/' and make sure
+that it is owned by the user running the SNMP daemon.
+
+```
+mkdir -p /var/cache/librenms/
+```
+
 The MySQL script requires PHP-CLI and the PHP MySQL extension, so
 please verify those are installed.
 
@@ -830,7 +960,14 @@ https://github.com/librenms/librenms-agent/raw/master/snmp/mysql -O /etc/snmp/my
 
 2: Run `chmod +x /etc/snmp/mysql`
 
-3: Unlike most other scripts, the MySQL script requires a
+3: Create the cache directory, '/var/cache/librenms/' and make sure
+that it is owned by the user running the SNMP daemon.
+
+```
+mkdir -p /var/cache/librenms/
+```
+
+4: Unlike most other scripts, the MySQL script requires a
 configuration file `mysql.cnf` in `/etc/snmp/` with following content:
 
 ```php
@@ -841,13 +978,16 @@ $mysql_host = 'localhost';
 $mysql_port = 3306;
 ```
 
-4: Edit your snmpd.conf file and add:
+Note that depending on your MySQL installation (chrooted install for example),
+you may have to specify 127.0.0.1 instead of localhost. Localhost make
+a MySQL connection via the mysql socket, while 127.0.0.1 make a standard
+IP connection to mysql.
+
+5: Edit your snmpd.conf file and add:
 
 ```
 extend mysql /etc/snmp/mysql
 ```
-
-5: Restart snmpd.
 
 6: Install the PHP CLI language and your MySQL module of choice for
 PHP.
@@ -855,6 +995,8 @@ PHP.
 The application should be auto-discovered as described at the top of
 the page. If it is not, please follow the steps set out under `SNMP
 Extend` heading top of page.
+
+7: Restart snmpd.
 
 # NGINX
 
@@ -1358,10 +1500,87 @@ extend proxmox /usr/bin/sudo /usr/local/bin/proxmox
 after, edit your sudo users (usually `visudo`) and add at the bottom:
 
 ```
-snmp ALL=(ALL) NOPASSWD: /usr/local/bin/proxmox
+Debian-snmp ALL=(ALL) NOPASSWD: /usr/local/bin/proxmox
 ```
 
 6: Restart snmpd on your host
+
+# Puppet Agent
+
+SNMP extend script to get your Puppet Agent data into your host.
+
+## SNMP Extend
+
+1: Download the script onto the desired host. `wget
+   https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/puppet_agent.py
+   -O /etc/snmp/puppet_agent.py`
+
+2: Make the script executable: `chmod +x /etc/snmp/puppet_agent.py`
+
+3: Edit your snmpd.conf file (usually `/etc/snmp/snmpd.conf`) and add:
+
+```
+extend puppet-agent /etc/snmp/puppet_agent.py
+```
+
+The Script needs `python3-yaml` package to be installed.
+
+Per default script searches for on of this files:
+
+* /var/cache/puppet/state/last_run_summary.yaml
+* /opt/puppetlabs/puppet/cache/state/last_run_summary.yaml
+
+optionally you can add a specific summary file with creating `/etc/snmp/puppet.json`
+```
+{
+     "agent": {
+        "summary_file": "/my/custom/path/to/summary_file"
+     }
+}
+```
+custom summary file has highest priority
+
+4: Restart snmpd on the host
+
+# PureFTPd
+
+SNMP extend script to monitor PureFTPd.
+
+## SNMP Extend
+
+1: Download the script onto the desired host. `wget
+   https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/pureftpd.py
+   -O /etc/snmp/pureftpd.py`
+
+2: Make the script executable: `chmod +x /etc/snmp/pureftpd.py`
+
+3: Edit your snmpd.conf file (usually `/etc/snmp/snmpd.conf`) and add:
+
+```
+extend pureftpd sudo /etc/snmp/pureftpd.py
+```
+
+4: Edit your sudo users (usually `visudo`) and add at the bottom:
+
+```
+snmp ALL=(ALL) NOPASSWD: /etc/snmp/pureftpd.py
+```
+or the path where your pure-ftpwho is located
+
+
+5: If pure-ftpwho is not located in /usr/sbin
+
+you will also need to create a config file, which is named
+
+pureftpd.json. The file has to be located in /etc/snmp/.
+
+
+```
+{"pureftpwho_cmd": "/usr/sbin/pure-ftpwho"
+}
+```
+
+5: Restart snmpd on your host
 
 # Raspberry PI
 
@@ -1378,13 +1597,13 @@ SNMP extend script to get your PI data into your host.
 3: Edit your snmpd.conf file (usually `/etc/snmp/snmpd.conf`) and add:
 
 ```
-extend raspberry /etc/snmp/raspberry.sh
+extend raspberry sudo /etc/snmp/raspberry.sh
 ```
 
 4: Edit your sudo users (usually `visudo`) and add at the bottom:
 
 ```
-snmp ALL=(ALL) NOPASSWD: /etc/snmp/raspberry.sh, /usr/bin/vcgencmd*
+snmp ALL=(ALL) NOPASSWD: /etc/snmp/raspberry.sh, /usr/bin/vcgencmd
 ```
 
 **Note:** If you are using Raspian, the default user is
@@ -1393,32 +1612,97 @@ the user snmpd is using with `ps aux | grep snmpd`
 
 5: Restart snmpd on PI host
 
+# Redis
+
+SNMP extend script to monitor your Redis Server
+
+## SNMP Extend
+
+1: Download the script onto the desired host. `wget
+   https://raw.githubusercontent.com/librenms/librenms-agent/master/snmp/redis.py
+   -O /etc/snmp/redis.py`
+
+2: Make the script executable: `chmod +x /etc/snmp/redis.py`
+
+3: Edit your snmpd.conf file (usually `/etc/snmp/snmpd.conf`) and add:
+
+```
+extend redis /etc/snmp/redis.py
+```
+
+# Seafile
+
+SNMP extend script to monitor your Seafile Server
+
+## SNMP Extend
+
+1: Copy the Python script, seafile.py, to the desired host. `wget
+https://github.com/librenms/librenms-agent/raw/master/snmp/seafile.py -O
+/etc/snmp/seafile.py`
+
+Also you have to install the requests Package for Python3.
+Under Ubuntu/Debian just run `apt install python3-requests`
+
+2: Run `chmod +x /etc/snmp/seafile.py`
+
+3: Edit your snmpd.conf file and add:
+
+```
+extend seafile /etc/snmp/seafile.py
+```
+
+4: You will also need to create the config file, which is named
+seafile.json . The script has to be located at /etc/snmp/.
+
+
+```
+{"url": "https://seafile.mydomain.org",
+ "username": "some_admin_login@mail.address",
+ "password": "password",
+ "account_identifier": "name"
+ "hide_monitoring_account": true
+}
+```
+
+The variables are as below.
+
+```
+url = Url how to get access to Seafile Server
+username = Login to Seafile Server.
+           It is important that used Login has admin privileges.
+           Otherwise most API calls will be denied.
+password = Password to the configured login.
+account_identifier = Defines how user accounts are listed in RRD Graph.
+                     Options are: name, email
+hide_monitoring_account = With this Boolean you can hide the Account which you
+                          use to access Seafile API
+```
+
+**Note:**It is recommended to use a dedicated Administrator account for monitoring.
+
 # SMART
 
 ## SNMP Extend
 
-1: Copy the Perl script, smart, to the desired host. `wget
-https://github.com/librenms/librenms-agent/raw/master/snmp/smart -O
-/etc/snmp/smart`
+1. Copy the Perl script, smart, to the desired host.
 
-2: Run `chmod +x /etc/snmp/smart`
+```wget https://github.com/librenms/librenms-agent/raw/master/snmp/smart -O /etc/snmp/smart```
 
-3: Edit your snmpd.conf file and add:
+2. Run `chmod +x /etc/snmp/smart`
+
+3. Edit your snmpd.conf file and add:
 
 ```
 extend smart /etc/snmp/smart
 ```
 
-4: You will also need to create the config file, which defaults to the
-same path as the script, but with .config appended. So if the script
-is located at /etc/snmp/smart, the config file will be
-/etc/snmp/smart.config. Alternatively you can also specific a config
-via -c.
+4. You will also need to create the config file, which defaults to the same path as the script,
+but with .config appended. So if the script is located at /etc/snmp/smart, the config file
+will be `/etc/snmp/smart.config`. Alternatively you can also specific a config via `-c`.
 
-Anything starting with a # is comment. The format for variables is
-$variable=$value. Empty lines are ignored. Spaces and tabes at either
-the start or end of a line are ignored. Any line with out a = or # are
-treated as a disk.
+Anything starting with a # is comment. The format for variables is $variable=$value. Empty
+lines are ignored. Spaces and tabes at either the start or end of a line are ignored. Any
+line with out a matched variable or # are treated as a disk.
 
 ```
 #This is a comment
@@ -1427,6 +1711,10 @@ smartctl=/usr/bin/env smartctl
 useSN=1
 ada0
 ada1
+da5 /dev/da5 -d sat
+twl0,0 /dev/twl0 -d 3ware,0
+twl0,1 /dev/twl0 -d 3ware,1
+twl0,2 /dev/twl0 -d 3ware,2
 ```
 
 The variables are as below.
@@ -1434,15 +1722,19 @@ The variables are as below.
 ```
 cache = The path to the cache file to use. Default: /var/cache/smart
 smartctl = The path to use for smartctl. Default: /usr/bin/env smartctl
-useSN = If set to 1, it will use the disks SN for reporting instead of
-        the device name. 1 is the default. 0 will use the device name.
+useSN = If set to 1, it will use the disks SN for reporting instead of the device name.
+        1 is the default. 0 will use the device name.
 ```
 
-If you want to guess at the configuration, call it with -g and it will
-print out what it thinks it should be. This will result in a usable
-config, but may miss some less common disk devices.
+A disk line is can be as simple as just a disk name under /dev/. Such as in the config above
+The line "ada0" would resolve to "/dev/ada0" and would be called with no special argument. If
+a line has a space in it, everything before the space is treated as the disk name and is what
+used for reporting and everything after that is used as the argument to be passed to smartctl.
 
-5: Restart snmpd on your host
+If you want to guess at the configuration, call it with -g and it will print out what it thinks
+it should be.
+
+5. Restart snmpd on your host
 
 If you have a large number of more than one or two disks on a system,
 you should consider adding this to cron. Also make sure the cache file
@@ -1452,11 +1744,11 @@ is some place it can be written to.
  */3 * * * * /etc/snmp/smart -u
 ```
 
-6: If your snmp agent runs as user "snmp", edit your sudo users
+6. If your snmp agent runs as user "snmp", edit your sudo users
    (usually `visudo`) and add at the bottom:
 
 ```
-snmp ALL=(ALL) NOPASSWD: /etc/snmp/smart, /usr/sbin/smartctl
+snmp ALL=(ALL) NOPASSWD: /etc/snmp/smart, /usr/bin/env smartctl
 
 ```
 
@@ -1524,14 +1816,14 @@ adjust this path if necessary.
 1: Replace your _log_'s `run` file, typically located in
    `/service/dns/log/run` with:
 
-```shell
+```bash
 #!/bin/sh
 exec setuidgid dnslog tinystats ./main/tinystats/ multilog t n3 s250000 ./main/
 ```
 
 2: Create tinystats directory and chown:
 
-```shell
+```bash
 mkdir /service/dns/log/main/tinystats
 chown dnslog:nofiles /service/dns/log/main/tinystats
 ```
@@ -1693,7 +1985,14 @@ echo "extend zfs /etc/snmp/zfs-freebsd" >> /etc/snmp/snmpd.conf
 ```
 wget https://github.com/librenms/librenms-agent/raw/master/snmp/zfs-linux -O /etc/snmp/zfs-linux
 chmod +x /etc/snmp/zfs-linux
-echo "extend zfs /etc/snmp/zfs-linux" >> /etc/snmp/snmpd.conf
+echo "extend zfs sudo /etc/snmp/zfs-linux" >> /etc/snmp/snmpd.conf
 ```
+
+Edit your sudo users (usually `visudo`) and add at the bottom:
+
+```
+snmp ALL=(ALL) NOPASSWD: /etc/snmp/zfs-linux
+```
+
 
 Now restart snmpd and you're all set.

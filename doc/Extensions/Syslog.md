@@ -111,6 +111,37 @@ Add the following to your LibreNMS `config.php` file to enable the Syslog extens
 $config['enable_syslog'] = 1;
 ```
 
+
+If no messages make it to the syslog tab in LibreNMS, chances are you experience an issue with SELinux. If so, create a file mycustom-librenms-rsyslog.te , with the following content:
+
+```
+module mycustom-librenms-rsyslog 1.0;
+
+require {
+        type syslogd_t;
+        type httpd_sys_rw_content_t;
+        type ping_exec_t;
+        class process execmem;
+        class dir { getattr search write };
+        class file { append getattr execute open read };
+}
+
+#============= syslogd_t ==============
+allow syslogd_t httpd_sys_rw_content_t:dir { getattr search write };
+allow syslogd_t httpd_sys_rw_content_t:file { open read append getattr };
+allow syslogd_t self:process execmem;
+allow syslogd_t ping_exec_t:file execute;
+```
+
+Then, as root, execute the following commands:
+
+```ssh
+checkmodule -M -m -o mycustom-librenms-rsyslog.mod mycustom-librenms-rsyslog.te
+semodule_package -o mycustom-librenms-rsyslog.pp -m mycustom-librenms-rsyslog.mod
+semodule -i mycustom-librenms-rsyslog.pp
+```
+
+
 ### rsyslog
 
 If you prefer rsyslog, here are some hints on how to get it working.
@@ -221,7 +252,7 @@ $config['syslog_purge'] = 30;
 The cleanup is run by daily.sh and any entries over X days old are
 automatically purged. Values are in days. See here for more Clean Up
 Options
-[Link](https://docs.librenms.org/#Support/Configuration/#cleanup-options)
+[Link](https://docs.librenms.org/Support/Cleanup-options/)
 
 # Client configuration
 
@@ -291,12 +322,12 @@ info-center timestamp debugging short-date without-timezone // Optional
 info-center timestamp log short-date // Optional
 info-center timestamp trap short-date // Optional
 //This is optional config, especially if the device is in public ip and you dont'want to get a lot of messages of ACL
-info-center filter-id bymodule-alias VTY ACL_DENY 
-info-center filter-id bymodule-alias SSH SSH_FAIL 
-info-center filter-id bymodule-alias SNMP SNMP_FAIL 
-info-center filter-id bymodule-alias SNMP SNMP_IPLOCK 
-info-center filter-id bymodule-alias SNMP SNMP_IPUNLOCK 
-info-center filter-id bymodule-alias HTTP ACL_DENY 
+info-center filter-id bymodule-alias VTY ACL_DENY
+info-center filter-id bymodule-alias SSH SSH_FAIL
+info-center filter-id bymodule-alias SNMP SNMP_FAIL
+info-center filter-id bymodule-alias SNMP SNMP_IPLOCK
+info-center filter-id bymodule-alias SNMP SNMP_IPUNLOCK
+info-center filter-id bymodule-alias HTTP ACL_DENY
 ```
 
 ## Huawei SmartAX (GPON OLT)
@@ -311,9 +342,9 @@ loghost activate name librenms
 ```config
 log date-format iso // Required so syslog-ng/LibreNMS can correctly interpret the log message formatting.
 log host x.x.x.x
-log host x.x.x.x level <errors> // Required. A log-level must be specified for syslog messages to send. 
+log host x.x.x.x level <errors> // Required. A log-level must be specified for syslog messages to send.
 log host x.x.x.x level notices program imish // Useful for seeing all commands executed by users.
-log host x.x.x.x level notices program imi // Required for Oxidized Syslog hook log message.  
+log host x.x.x.x level notices program imi // Required for Oxidized Syslog hook log message.
 log host source <eth0>
 ```
 
@@ -328,7 +359,7 @@ By Default windows has no native way to send logs to a remote syslog server.
 Using this how to you can download Datagram-Syslog Agent to send logs
 to a remote syslog server (LibreNMS).
 
-#### Note
+### Note
 
 Keep in mind you can use any agent or program to send the logs. We are
 just using this Datagram-Syslog Agent for this example.

@@ -28,10 +28,11 @@ namespace App\Http\Controllers\Table;
 use App\Models\Device;
 use App\Models\Location;
 use Illuminate\Database\Eloquent\Builder;
+use LibreNMS\Alert\AlertUtil;
 use LibreNMS\Config;
 use LibreNMS\Util\Rewrite;
-use LibreNMS\Util\Url;
 use LibreNMS\Util\Time;
+use LibreNMS\Util\Url;
 
 class DeviceController extends TableController
 {
@@ -50,18 +51,33 @@ class DeviceController extends TableController
             'state' => 'nullable|in:0,1,up,down',
             'disabled' => 'nullable|in:0,1',
             'ignore' => 'nullable|in:0,1',
+            'disable_notify' => 'nullable|in:0,1',
             'group' => 'nullable|int',
+            'poller_group' => 'nullable|int',
         ];
     }
 
     protected function filterFields($request)
     {
-        return ['os', 'version', 'hardware', 'features', 'type', 'status' => 'state', 'disabled', 'ignore', 'location_id' => 'location'];
+        return ['os', 'version', 'hardware', 'features', 'type', 'status' => 'state', 'disabled', 'disable_notify', 'ignore', 'location_id' => 'location'];
     }
 
     protected function searchFields($request)
     {
         return ['sysName', 'hostname', 'hardware', 'os', 'locations.location'];
+    }
+
+    protected function sortFields($request)
+    {
+        return [
+            'status' => 'status',
+            'icon' => 'icon',
+            'hostname' => 'hostname',
+            'hardware' => 'hardware',
+            'os' => 'os',
+            'uptime' => \DB::raw("IF(`status` = 1, `uptime`, `last_polled` - NOW())"),
+            'location' => 'location'
+        ];
     }
 
     /**
@@ -85,6 +101,10 @@ class DeviceController extends TableController
             $query->whereHas('groups', function ($query) use ($group) {
                 $query->where('id', $group);
             });
+        }
+
+        if ($request->get('poller_group') !== null) {
+            $query->where('poller_group', $request->get('poller_group'));
         }
 
         return $query;
@@ -121,6 +141,7 @@ class DeviceController extends TableController
         return [
             'extra' => $this->getLabel($device),
             'status' => $this->getStatus($device),
+            'maintenance' => AlertUtil::isMaintenance($device->device_id),
             'icon' => '<img src="' . asset($device->icon) . '" title="' . pathinfo($device->icon, PATHINFO_FILENAME) . '">',
             'hostname' => $this->getHostname($device),
             'metrics' => $this->getMetrics($device),
@@ -157,6 +178,8 @@ class DeviceController extends TableController
     {
         if ($device->disabled == 1) {
             return 'blackbg';
+        } elseif ($device->disable_notify == 1) {
+            return 'blackbg';
         } elseif ($device->ignore == 1) {
             return 'label-default';
         } elseif ($device->status == 0) {
@@ -192,7 +215,6 @@ class DeviceController extends TableController
      */
     private function getOsText($device)
     {
-        $device->loadOs();
         $os_text = Config::getOsSetting($device->os, 'text');
 
         if ($this->isDetailed()) {
@@ -240,7 +262,7 @@ class DeviceController extends TableController
     private function formatMetric($device, $count, $tab, $icon)
     {
         $html = '<a href="' . Url::deviceUrl($device, ['tab' => $tab]) . '">';
-        $html .= '<span><i class="fa ' . $icon . ' fa-lg icon-theme"></i> ' . $count;
+        $html .= '<span><i title="' . $tab . '" class="fa ' . $icon . ' fa-lg icon-theme"></i> ' . $count;
         $html .= '</span></a> ';
         return $html;
     }
@@ -251,15 +273,9 @@ class DeviceController extends TableController
      */
     private function getLocation($device)
     {
-        if ($device->location) {
-            if (extension_loaded('mbstring')) {
-                return mb_substr($device->location->location, 0, 32, 'utf8');
-            } else {
-                return substr($device->location->location, 0, 32);
-            }
-        }
-
-        return '';
+        return extension_loaded('mbstring')
+            ? mb_substr($device->location, 0, 32, 'utf8')
+            : substr($device->location, 0, 32);
     }
 
     /**
@@ -273,7 +289,7 @@ class DeviceController extends TableController
         $actions .= '<div class="col-xs-1"><a href="' . Url::deviceUrl($device, ['tab' => 'alerts']) . '"> <i class="fa fa-exclamation-circle fa-lg icon-theme" title="View alerts"></i></a></div>';
 
         if (\Auth::user()->hasGlobalAdmin()) {
-            $actions .= '<div class="col-xs-1"><a href="' . Url::deviceUrl($device, ['tab' => 'edit']) . '"> <i class="fa fa-pencil fa-lg icon-theme" title="Edit device"></i></a></div>';
+            $actions .= '<div class="col-xs-1"><a href="' . Url::deviceUrl($device, ['tab' => 'edit']) . '"> <i class="fa fa-gear fa-lg icon-theme" title="Edit device"></i></a></div>';
         }
 
         if ($this->isDetailed()) {

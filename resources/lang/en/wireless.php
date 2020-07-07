@@ -11,6 +11,7 @@ return [
     |
     */
 
+    'title' => 'Wireless',
     'ap-count' => [
         'short' => 'APs',
         'long' => 'AP Count',
@@ -64,7 +65,7 @@ return [
     'noise-floor' => [
         'short' => 'Noise Floor',
         'long' => 'Noise Floor',
-        'unit' => 'dBm/Hz',
+        'unit' => 'dBm',
     ],
     'power' => [
         'short' => 'Power/Signal',
@@ -90,6 +91,21 @@ return [
         'short' => 'SNR',
         'long' => 'Signal-to-Noise Ratio',
         'unit' => 'dB',
+    ],
+    'sinr' => [
+        'short' => 'SINR',
+        'long' => ' Signal-to-Interference-plus-Noise Ratio',
+        'unit' => 'dB',
+    ],
+    'rsrq' => [
+        'short' => 'RSRQ',
+        'long' => 'Reference Signal Received Quality',
+        'unit' => 'dB',
+    ],
+    'rsrp' => [
+        'short' => 'RSRP',
+        'long' => 'Reference Signals Received Power',
+        'unit' => 'dBm',
     ],
     'ssr' => [
         'short' => 'SSR',

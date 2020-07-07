@@ -23,6 +23,7 @@
  */
 namespace LibreNMS\Alert\Transport;
 
+use LibreNMS\Enum\AlertState;
 use LibreNMS\Alert\Transport;
 
 class Mattermost extends Transport
@@ -45,7 +46,7 @@ class Mattermost extends Transport
         $host = $api['url'];
         $curl = curl_init();
         $mattermost_msg = strip_tags($obj['msg']);
-        $color = ($obj['state'] == 0 ? '#00FF00' : '#FF0000');
+        $color = self::getColorForState($obj['state']);
         $data = [
             'attachments' => [
                 0 => [

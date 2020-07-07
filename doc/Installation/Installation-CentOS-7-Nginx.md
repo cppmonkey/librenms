@@ -6,20 +6,24 @@ path: blob/master/doc/
 > at `mysql>` prompts) or temporarily become a user with root
 > privileges with `sudo -s` or `sudo -i`.
 
-**Please note the minimum supported PHP version is 7.1.3**
+**Please note the minimum supported PHP version is 7.2.5**
 
 # Install Required Packages
 
 ```
-yum install epel-release
+yum install epel-release yum-utils
 ```
 
 ```
-rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
+yum localinstall http://rpms.remirepo.net/enterprise/remi-release-7.rpm
 ```
 
 ```
-yum install composer cronie fping git ImageMagick jwhois mariadb mariadb-server mtr MySQL-python net-snmp net-snmp-utils nginx nmap php72w php72w-cli php72w-common php72w-curl php72w-fpm php72w-gd php72w-mbstring php72w-mysqlnd php72w-process php72w-snmp php72w-xml php72w-zip python-memcached rrdtool
+yum-config-manager --enable remi-php73
+```
+
+```
+yum install composer cronie fping git ImageMagick jwhois mariadb mariadb-server mtr MySQL-python net-snmp net-snmp-utils nginx nmap php-fpm php-cli php-common php-curl php-gd php-mbstring php-process php-snmp php-xml php-zip php-memcached php-mysqlnd python-memcached rrdtool python3 python3-pip
 ```
 
 # Add librenms user
@@ -115,7 +119,7 @@ user = nginx
 group = apache   ; keep group as apache
 
 ;listen = 127.0.0.1:9000
-listen = /var/run/php-fpm/php7.2-fpm.sock
+listen = /run/php-fpm/php-fpm.sock
 
 listen.owner = nginx
 listen.group = nginx
@@ -154,7 +158,7 @@ server {
  location ~ \.php {
   include fastcgi.conf;
   fastcgi_split_path_info ^(.+\.php)(/.+)$;
-  fastcgi_pass unix:/var/run/php-fpm/php7.2-fpm.sock;
+  fastcgi_pass unix:/run/php-fpm/php-fpm.sock;
  }
  location ~ /\.ht {
   deny all;
@@ -320,7 +324,7 @@ cd /opt/librenms
 ```
 
 There are various options for getting help listed on the LibreNMS web
-site: https://www.librenms.org/#support
+site: <https://www.librenms.org/#support>
 
 # What next?
 

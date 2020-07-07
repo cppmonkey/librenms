@@ -28,7 +28,7 @@ the "snippet" configuration, the main differences come when you get to
 directed to edit `/etc/nginx/sites-available/default`, so we need to
 go to `/etc/nginx/conf.d/librenms.conf`.
 
-`sudo vi /etc/nginx/sites-available/default`
+`sudo vi /etc/nginx/conf.d/librenms.conf`
 
 The top section of this file will look like this:
 
@@ -117,7 +117,9 @@ Your VirtualHost for 443 will need to look something like this for LibreNMS
 ```
 
 ### Step 2
+
 Then restart Apache `sudo systemctl restart httpd`
 
 ### Step 3
+
 Follow the rest of the How To, especially if you have the server's firewall enabled.

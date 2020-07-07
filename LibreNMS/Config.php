@@ -26,68 +26,90 @@
 namespace LibreNMS;
 
 use App\Models\GraphType;
+use Exception;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use LibreNMS\DB\Eloquent;
+use Log;
 
 class Config
 {
+    private static $config;
+
     /**
      * Load the config, if the database connected, pull in database settings.
      *
      * return &array
      */
-    public static function &load()
+    public static function load()
     {
-        global $config;
-
-        self::loadFiles();
-
-        // Make sure the database is connected
-        if (Eloquent::isConnected() || (function_exists('dbIsConnected') && dbIsConnected())) {
-            // pull in the database config settings
-            self::mergeDb();
-
-            // load graph types from the database
-            self::loadGraphsFromDb();
-
-            // process $config to tidy up
-            self::processConfig(true);
-        } else {
-            // just process $config
-            self::processConfig(false);
+        // don't reload the config if it is already loaded, reload() should be used for that
+        if (!is_null(self::$config)) {
+            return self::$config;
         }
 
-        return $config;
+        // merge all config sources together config_definitions.json > db config > config.php
+        self::loadDefaults();
+        self::loadDB();
+        self::loadUserConfigFile(self::$config);
+
+        // final cleanups and validations
+        self::processConfig();
+
+        // set to global for legacy/external things (is this needed?)
+        global $config;
+        $config = self::$config;
+
+        return self::$config;
     }
 
     /**
-     * Load the user config from config.php, defaults.inc.php and definitions.inc.php, etc.
-     * Erases existing config.
+     * Reload the config from files/db
+     * @return mixed
+     */
+    public static function reload()
+    {
+        self::$config = null;
+        return self::load();
+    }
+
+    /**
+     * Get the config setting definitions
      *
      * @return array
      */
-    private static function &loadFiles()
+    public static function getDefinitions()
     {
-        global $config;
+        return json_decode(file_get_contents(base_path('misc/config_definitions.json')), true)['config'];
+    }
 
-        $config = []; // start fresh
+    private static function loadDefaults()
+    {
+        self::$config['install_dir'] = base_path();
+        $definitions = self::getDefinitions();
 
-        $install_dir = realpath(__DIR__ . '/../');
-        $config['install_dir'] = $install_dir;
+        foreach ($definitions as $path => $def) {
+            if (array_key_exists('default', $def)) {
+                Arr::set(self::$config, $path, $def['default']);
+            }
+        }
 
-        // load defaults
-        require $install_dir . '/includes/defaults.inc.php';
-        require $install_dir . '/includes/definitions.inc.php';
+        // load macros from json
+        $macros = json_decode(file_get_contents(base_path('misc/macros.json')), true);
+        Arr::set(self::$config, 'alert.macros.rule', $macros);
 
-        // import standard settings
-        $macros = json_decode(file_get_contents($install_dir . '/misc/macros.json'), true);
-        self::set('alert.macros.rule', $macros);
+        self::processDefaults();
+    }
 
-        // Load user config
-        @include $install_dir . '/config.php';
-
-        return $config;
+    /**
+     * Load the user config from config.php
+     * @param array $config (this should be self::$config)
+     */
+    private static function loadUserConfigFile(&$config)
+    {
+        // Load user config file
+        @include base_path('config.php');
     }
 
 
@@ -100,32 +122,15 @@ class Config
      */
     public static function get($key, $default = null)
     {
-        global $config;
-
-        if (isset($config[$key])) {
-            return $config[$key];
+        if (isset(self::$config[$key])) {
+            return self::$config[$key];
         }
 
-        if (!str_contains($key, '.')) {
+        if (!Str::contains($key, '.')) {
             return $default;
         }
 
-        $keys = explode('.', $key);
-
-        $curr = &$config;
-        foreach ($keys as $k) {
-            // do not add keys that don't exist
-            if (!isset($curr[$k])) {
-                return $default;
-            }
-            $curr = &$curr[$k];
-        }
-
-        if (is_null($curr)) {
-            return $default;
-        }
-
-        return $curr;
+        return Arr::get(self::$config, $key, $default);
     }
 
     /**
@@ -136,8 +141,7 @@ class Config
      */
     public static function forget($key)
     {
-        global $config;
-        Arr::forget($config, $key);
+        Arr::forget(self::$config, $key);
     }
 
     /**
@@ -166,7 +170,6 @@ class Config
 
     /**
      * Get a setting from the $config['os'] array using the os of the given device
-     * If that is not set, fallback to the same global config key
      *
      * @param string $os The os name
      * @param string $key period separated config variable name
@@ -175,15 +178,11 @@ class Config
      */
     public static function getOsSetting($os, $key, $default = null)
     {
-        global $config;
-
         if ($os) {
-            if (isset($config['os'][$os][$key])) {
-                return $config['os'][$os][$key];
-            }
+            \LibreNMS\Util\OS::loadDefinition($os);
 
-            if (!str_contains($key, '.')) {
-                return self::get($key, $default);
+            if (isset(self::$config['os'][$os][$key])) {
+                return self::$config['os'][$os][$key];
             }
 
             $os_key = "os.$os.$key";
@@ -192,7 +191,7 @@ class Config
             }
         }
 
-        return self::get($key, $default);
+        return $default;
     }
 
     /**
@@ -207,14 +206,12 @@ class Config
      */
     public static function getCombined($os, $key, $default = array())
     {
-        global $config;
-
         if (!self::has($key)) {
-            return self::get("os.$os.$key", $default);
+            return self::getOsSetting($os, $key, $default);
         }
 
-        if (!isset($config['os'][$os][$key])) {
-            if (!str_contains($key, '.')) {
+        if (!isset(self::$config['os'][$os][$key])) {
+            if (!Str::contains($key, '.')) {
                 return self::get($key, $default);
             }
             if (!self::has("os.$os.$key")) {
@@ -233,62 +230,58 @@ class Config
      *
      * @param mixed $key period separated config variable name
      * @param mixed $value
-     * @param bool $persist set the setting in the database so it persists across runs
-     * @param string $default default (only set when initially created)
-     * @param string $descr webui description (only set when initially created)
-     * @param string $group webui group (only set when initially created)
-     * @param string $sub_group webui subgroup (only set when initially created)
      */
-    public static function set($key, $value, $persist = false, $default = null, $descr = null, $group = null, $sub_group = null)
+    public static function set($key, $value)
     {
-        global $config;
+        Arr::set(self::$config, $key, $value);
+    }
 
-        if ($persist) {
-            if (Eloquent::isConnected()) {
-                try {
-                    $config_array = collect([
-                        'config_name' => $key,
-                        'config_value' => $value,
-                        'config_default' => $default,
-                        'config_descr' => $descr,
-                        'config_group' => $group,
-                        'config_sub_group' => $sub_group,
-                    ])->filter(function ($value) {
-                        return !is_null($value);
-                    })->toArray();
+    /**
+     * Save setting to persistent storage.
+     *
+     * @param mixed $key period separated config variable name
+     * @param mixed $value
+     * @return bool if the save was successful
+     */
+    public static function persist($key, $value)
+    {
+        try {
+                \App\Models\Config::updateOrCreate(['config_name' => $key], [
+                    'config_name' => $key,
+                    'config_value' => $value,
+                ]);
+                Arr::set(self::$config, $key, $value);
 
-                    \App\Models\Config::updateOrCreate(['config_name' => $key], $config_array);
-                } catch (QueryException $e) {
-                    // possibly table config doesn't exist yet
-                    global $debug;
-                    if ($debug) {
-                        echo $e;
-                    }
-                }
-            } else {
-                $res = dbUpdate(array('config_value' => $value), 'config', '`config_name`=?', array($key));
-                if (!$res && !dbFetchCell('SELECT 1 FROM `config` WHERE `config_name`=?', array($key))) {
-                    $insert = array(
-                        'config_name' => $key,
-                        'config_value' => $value,
-                        'config_default' => $default,
-                        'config_descr' => $descr,
-                        'config_group' => $group,
-                        'config_sub_group' => $sub_group,
-                    );
-                    dbInsert($insert, 'config');
-                }
+                // delete any children (there should not be any unless it is legacy)
+                \App\Models\Config::query()->where('config_name', 'like', "$key.%")->delete();
+            return true;
+        } catch (Exception $e) {
+            if (class_exists(Log::class)) {
+                Log::error($e);
             }
+            global $debug;
+            if ($debug) {
+                echo $e;
+            }
+            return false;
         }
+    }
 
-        $keys = explode('.', $key);
-
-        $curr = &$config;
-        foreach ($keys as $k) {
-            $curr = &$curr[$k];
+    /**
+     * Forget a key and all it's descendants from persistent storage.
+     * This will effectively set it back to default.
+     *
+     * @param string $key
+     * @return int|false
+     */
+    public static function erase($key)
+    {
+        self::forget($key);
+        try {
+            return \App\Models\Config::withChildren($key)->delete();
+        } catch (Exception $e) {
+            return false;
         }
-
-        $curr = $value;
     }
 
     /**
@@ -299,29 +292,15 @@ class Config
      */
     public static function has($key)
     {
-        global $config;
-
-        if (isset($config[$key])) {
+        if (isset(self::$config[$key])) {
             return true;
         }
 
-        if (!str_contains($key, '.')) {
+        if (!Str::contains($key, '.')) {
             return false;
         }
 
-        $keys = explode('.', $key);
-        $last = array_pop($keys);
-
-        $curr = &$config;
-        foreach ($keys as $k) {
-            // do not add keys that don't exist
-            if (!isset($curr[$k])) {
-                return false;
-            }
-            $curr = &$curr[$k];
-        }
-
-        return is_array($curr) && isset($curr[$last]);
+        return Arr::has(self::$config, $key);
     }
 
     /**
@@ -329,11 +308,9 @@ class Config
      *
      * @return string
      */
-    public static function json_encode()
+    public static function toJson()
     {
-        global $config;
-
-        return json_encode($config);
+        return json_encode(self::$config);
     }
 
     /**
@@ -342,82 +319,39 @@ class Config
      */
     public static function getAll()
     {
-        global $config;
-        return $config;
+        return self::$config;
     }
 
     /**
      * merge the database config with the global config
      * Global config overrides db
      */
-    private static function mergeDb()
+    private static function loadDB()
     {
-        global $config;
-
-        $db_config = [];
-
-        if (Eloquent::isConnected()) {
-            try {
-                \App\Models\Config::get(['config_name', 'config_value'])
-                    ->each(function ($item) use (&$db_config) {
-                        array_set($db_config, $item->config_name, $item->config_value);
-                    });
-            } catch (QueryException $e) {
-                // possibly table config doesn't exist yet
-            }
-
-        } else {
-            foreach (dbFetchRows('SELECT `config_name`,`config_value` FROM `config`') as $obj) {
-                self::assignArrayByPath($db_config, $obj['config_name'], $obj['config_value']);
-            }
+        if (!Eloquent::isConnected()) {
+            return;
         }
 
-        $config = array_replace_recursive($db_config, $config);
+        try {
+            \App\Models\Config::get(['config_name', 'config_value'])
+                ->each(function ($item) {
+                    Arr::set(self::$config, $item->config_name, $item->config_value);
+                });
+        } catch (QueryException $e) {
+            // possibly table config doesn't exist yet
+        }
+
+        // load graph types from the database
+        self::loadGraphsFromDb(self::$config);
     }
 
-    /**
-     * Assign a value into the passed array by a path
-     * 'snmp.version' = 'v1' becomes $arr['snmp']['version'] = 'v1'
-     *
-     * @param array $arr the array to insert the value into, will be modified in place
-     * @param string $path the path to insert the value at
-     * @param mixed $value the value to insert, will be type cast
-     * @param string $separator path separator
-     */
-    private static function assignArrayByPath(&$arr, $path, $value, $separator = '.')
+    private static function loadGraphsFromDb(&$config)
     {
-        // type cast value. Is this needed here?
-        if (filter_var($value, FILTER_VALIDATE_INT)) {
-            $value = (int)$value;
-        } elseif (filter_var($value, FILTER_VALIDATE_FLOAT)) {
-            $value = (float)$value;
-        } elseif (filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== null) {
-            $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-        }
-
-        $keys = explode($separator, $path);
-
-        // walk the array creating keys if they don't exist
-        foreach ($keys as $key) {
-            $arr = &$arr[$key];
-        }
-        // assign the variable
-        $arr = $value;
-    }
-
-    private static function loadGraphsFromDb()
-    {
-        global $config;
-
-        if (Eloquent::isConnected()) {
-            try {
-                $graph_types = GraphType::all()->toArray();
-            } catch (QueryException $e) {
-                // possibly table config doesn't exist yet
-                $graph_types = [];
-            }
-        } else {
-            $graph_types = dbFetchRows('SELECT * FROM graph_types');
+        try {
+            $graph_types = GraphType::all()->toArray();
+        } catch (QueryException $e) {
+            // possibly table config doesn't exist yet
+            $graph_types = [];
         }
 
         // load graph types from the database
@@ -438,15 +372,40 @@ class Config
     }
 
     /**
-     * Proces the config after it has been loaded.
+     * Handle defaults that are set programmatically
+     */
+    private static function processDefaults()
+    {
+        Arr::set(self::$config, 'log_dir', base_path('logs'));
+        Arr::set(self::$config, 'distributed_poller_name', php_uname('n'));
+
+         // set base_url from access URL
+        if (isset($_SERVER['SERVER_NAME']) && isset($_SERVER['SERVER_PORT'])) {
+            $port = $_SERVER['SERVER_PORT'] != 80 ? ':' . $_SERVER['SERVER_PORT'] : '';
+            // handle literal IPv6
+            $server = Str::contains($_SERVER['SERVER_NAME'], ':') ? "[{$_SERVER['SERVER_NAME']}]" : $_SERVER['SERVER_NAME'];
+            Arr::set(self::$config, 'base_url', "http://$server$port/");
+        }
+
+        // graph color copying
+        Arr::set(self::$config, 'graph_colours.mega', array_merge(
+            (array)Arr::get(self::$config, 'graph_colours.psychedelic', []),
+            (array)Arr::get(self::$config, 'graph_colours.manycolours', []),
+            (array)Arr::get(self::$config, 'graph_colours.default', []),
+            (array)Arr::get(self::$config, 'graph_colours.mixed', [])
+        ));
+    }
+
+    /**
+     * Process the config after it has been loaded.
      * Make sure certain variables have been set properly and
      *
-     * @param bool $persist Save binary locations and other settings to the database.
      */
-    private static function processConfig($persist = true)
+    private static function processConfig()
     {
-        if (!self::get('email_from')) {
-            self::set('email_from', '"' . self::get('project_name') . '" <' . self::get('email_user') . '@' . php_uname('n') . '>');
+        // If we're on SSL, let's properly detect it
+        if (isset($_SERVER['HTTPS'])) {
+            self::set('base_url', preg_replace('/^http:/', 'https:', self::get('base_url')));
         }
 
         // If we're on SSL, let's properly detect it
@@ -454,13 +413,22 @@ class Config
             self::set('base_url', preg_replace('/^http:/', 'https:', self::get('base_url')));
         }
 
-        // Define some variables if they aren't set by user definition in config.php
+        if (!self::get('email_from')) {
+            self::set('email_from', '"' . self::get('project_name') . '" <' . self::get('email_user') . '@' . php_uname('n') . '>');
+        }
+
+        // Define some variables if they aren't set by user definition in config_definitions.json
+        self::set('applied_site_style', self::get('site_style'));
         self::setDefault('html_dir', '%s/html', ['install_dir']);
         self::setDefault('rrd_dir', '%s/rrd', ['install_dir']);
         self::setDefault('mib_dir', '%s/mibs', ['install_dir']);
         self::setDefault('log_dir', '%s/logs', ['install_dir']);
         self::setDefault('log_file', '%s/%s.log', ['log_dir', 'project_id']);
         self::setDefault('plugin_dir', '%s/plugins', ['html_dir']);
+        self::setDefault('temp_dir', sys_get_temp_dir() ?: '/tmp');
+        self::setDefault('irc_nick', '%s', ['project_name']);
+        self::setDefault('irc_chan.0', '##%s', ['project_id']);
+        self::setDefault('page_title_suffix', '%s', ['project_name']);
 //        self::setDefault('email_from', '"%s" <%s@' . php_uname('n') . '>', ['project_name', 'email_user']);  // FIXME email_from set because alerting config
 
         // deprecated variables
@@ -469,12 +437,22 @@ class Config
         self::deprecatedVariable('discovery_modules.cisco-vrf', 'discovery_modules.vrf');
         self::deprecatedVariable('oxidized.group', 'oxidized.maps.group');
 
+        $persist = Eloquent::isConnected();
         // make sure we have full path to binaries in case PATH isn't set
         foreach (array('fping', 'fping6', 'snmpgetnext', 'rrdtool', 'traceroute', 'traceroute6') as $bin) {
             if (!is_executable(self::get($bin))) {
-                self::set($bin, self::locateBinary($bin), $persist, $bin, "Path to $bin", 'external', 'paths');
+                if ($persist) {
+                    self::persist($bin, self::locateBinary($bin));
+                } else {
+                    self::set($bin, self::locateBinary($bin));
+                }
             }
         }
+
+        self::populateTime();
+
+        // populate legacy DB credentials, just in case something external uses them.  Maybe remove this later
+        self::populateLegacyDbCredentials();
     }
 
     /**
@@ -514,42 +492,6 @@ class Config
     }
 
     /**
-     * Get just the database connection settings from config.php
-     *
-     * @return array (keys: db_host, db_port, db_name, db_user, db_pass, db_socket)
-     */
-    public static function getDatabaseSettings()
-    {
-        // Do not access global $config in this function!
-
-        $keys = $config = [
-            'db_host' => '',
-            'db_port' => '',
-            'db_name' => '',
-            'db_user' => '',
-            'db_pass' => '',
-            'db_socket' => '',
-        ];
-
-        if (is_file(__DIR__ . '/../config.php')) {
-            include __DIR__ . '/../config.php';
-        }
-
-        // Check for testing database
-        if (isset($config['test_db_name'])) {
-            putenv('DB_TEST_DATABASE=' . $config['test_db_name']);
-        }
-        if (isset($config['test_db_user'])) {
-            putenv('DB_TEST_USERNAME=' . $config['test_db_user']);
-        }
-        if (isset($config['test_db_pass'])) {
-            putenv('DB_TEST_PASSWORD=' . $config['test_db_pass']);
-        }
-
-        return array_intersect_key($config, $keys); // return only the db settings
-    }
-
-    /**
      * Locate the actual path of a binary
      *
      * @param $binary
@@ -557,7 +499,7 @@ class Config
      */
     public static function locateBinary($binary)
     {
-        if (!str_contains($binary, '/')) {
+        if (!Str::contains($binary, '/')) {
             $output = `whereis -b $binary`;
             $list = trim(substr($output, strpos($output, ':') + 1));
             $targets = explode(' ', $list);
@@ -568,5 +510,38 @@ class Config
             }
         }
         return $binary;
+    }
+
+    private static function populateTime()
+    {
+        $now = time();
+        $now -= $now % 300;
+        self::set('time.now', $now);
+        self::set('time.onehour', $now - 3600); // time() - (1 * 60 * 60);
+        self::set('time.fourhour', $now - 14400); // time() - (4 * 60 * 60);
+        self::set('time.sixhour', $now - 21600); // time() - (6 * 60 * 60);
+        self::set('time.twelvehour', $now - 43200); // time() - (12 * 60 * 60);
+        self::set('time.day', $now - 86400); // time() - (24 * 60 * 60);
+        self::set('time.twoday', $now - 172800); // time() - (2 * 24 * 60 * 60);
+        self::set('time.week', $now - 604800); // time() - (7 * 24 * 60 * 60);
+        self::set('time.twoweek', $now - 1209600); // time() - (2 * 7 * 24 * 60 * 60);
+        self::set('time.month', $now - 2678400); // time() - (31 * 24 * 60 * 60);
+        self::set('time.twomonth', $now - 5356800); // time() - (2 * 31 * 24 * 60 * 60);
+        self::set('time.threemonth', $now - 8035200); // time() - (3 * 31 * 24 * 60 * 60);
+        self::set('time.sixmonth', $now - 16070400); // time() - (6 * 31 * 24 * 60 * 60);
+        self::set('time.year', $now - 31536000); // time() - (365 * 24 * 60 * 60);
+        self::set('time.twoyear', $now - 63072000); // time() - (2 * 365 * 24 * 60 * 60);
+    }
+
+    public static function populateLegacyDbCredentials()
+    {
+        $db = config('database.default');
+
+        self::set('db_host', config("database.connections.$db.host", 'localhost'));
+        self::set('db_name', config("database.connections.$db.database", 'librenms'));
+        self::set('db_user', config("database.connections.$db.username", 'librenms'));
+        self::set('db_pass', config("database.connections.$db.password"));
+        self::set('db_port', config("database.connections.$db.port", 3306));
+        self::set('db_socket', config("database.connections.$db.unix_socket"));
     }
 }

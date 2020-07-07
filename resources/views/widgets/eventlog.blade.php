@@ -15,10 +15,12 @@
     $("#eventlog").bootgrid({
         ajax: true,
         rowCount: [50, 100, 250, -1],
+        navigation: ! {{ $hidenavigation }},
         post: function ()
         {
             return {
                 device: "{{ $device }}",
+                device_group: "{{ $device_group }}",
                 eventtype: "{{ $eventtype }}"
             };
         },

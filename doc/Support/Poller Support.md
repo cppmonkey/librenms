@@ -9,7 +9,7 @@ manually running to process data.
 ## Command options
 
 ```bash
-	LibreNMS 2014.master Poller
+    LibreNMS 2014.master Poller
 
 -h <device id> | <device hostname wildcard>  Poll single device
 -h odd                                       Poll odd numbered devices  (same as -i 2 -n 0)
@@ -99,6 +99,7 @@ $config['poller_modules']['aruba-controller']            = false;
 $config['poller_modules']['entity-physical']             = true;
 $config['poller_modules']['entity-state']                = false;
 $config['poller_modules']['applications']                = true;
+$config['poller_modules']['availability']                = true;
 $config['poller_modules']['mib']                         = false;
 $config['poller_modules']['stp']                         = true;
 $config['poller_modules']['ntp']                         = true;
@@ -189,6 +190,8 @@ configured to be ignored by config options.
 `entity-physical`: Module to pick up the devices hardware support.
 
 `applications`: Device application support.
+
+`availability`: Device Availability Calculation.
 
 `cisco-asa-firewall`: Cisco ASA firewall support.
 
